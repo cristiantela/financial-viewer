@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Viewer</title>
+    <script src="vue/vue.js"></script>
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+  </head>
+
+  <body>
+    <div id="app">
+      <!-- <pre>{{ data }}</pre> -->
+
+      <div class="container">
+        <div class="row">
+          <div class="col">
+            Input
+
+            <textarea
+              v-model="input"
+              rows="10"
+              class="form-control form-control-sm"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="row">
+          <div v-for="block in data" class="col-12 col-sm-6">
+            <h1 class="text-center">
+              {{ monthName(block.month) }}/{{ block.year }}
+            </h1>
+            <div v-for="payment in block.payments" class="row">
+              <div class="col-3 text-right">{{ payment.value }}</div>
+              <div class="col">
+                <span v-if="payment.payedOn" class="badge badge-success mr-1">
+                  Payed on {{ payment.payedOn }}
+                </span>
+                <span
+                  v-for="tag in payment.tags"
+                  class="badge badge-primary mr-1"
+                >
+                  {{ tag }}
+                </span>
+                {{ upperCaseFirstLetter(payment.description) }}
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-3 text-right">
+                {{ sumArray(block.payments.map(payment => payment.value)) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      new Vue({
+        el: "#app",
+        data: {
+          input: `
+03/2020
+1000 salary
+-70 payed on 11 dentist plan #health
+-50 bus credit #transport #bus
+
+04/2020
+1000 salary
+                            `,
+          data: []
+        },
+
+        methods: {
+          monthName(month) {
+            return "January,February,March,April,May,June,July,August,September,November,December".split(
+              ","
+            )[month - 1];
+          },
+
+          sumArray(array) {
+            return array.reduce((value, current) => value + current);
+          },
+
+          upperCaseFirstLetter(text) {
+            return text.slice(0, 1).toUpperCase() + text.slice(1);
+          }
+        },
+
+        watch: {
+          input: {
+            handler(input) {
+              this.data = [];
+
+              let currentBlock = null;
+
+              input.split("\n").forEach(line => {
+                const rules = {
+                  blockStart: /^(\d{2})\/(\d{4})$/,
+                  payment: /^(-?\d+) /,
+                  payedOn: /^payed on (\d{2}) ?/,
+                  tags: /#([^#]+)/
+                };
+
+                if (rules.blockStart.test(line)) {
+                  const infos = line.match(rules.blockStart);
+
+                  currentBlock = {
+                    month: infos[1],
+                    year: infos[2],
+                    payments: []
+                  };
+
+                  this.data.push(currentBlock);
+                } else if (rules.payment.test(line)) {
+                  const infos = line.match(rules.payment);
+
+                  let text = line.slice(infos[0].length);
+
+                  let payedOn = null,
+                    tags = [];
+
+                  if (rules.payedOn.test(text)) {
+                    let matches = text.match(rules.payedOn);
+                    payedOn = matches[1];
+                    text = text.slice(matches[0].length);
+                  }
+
+                  while (rules.tags.test(text)) {
+                    let matches = text.match(rules.tags);
+
+                    text =
+                      text.slice(0, matches.index) +
+                      text.slice(matches.index + matches[0].length);
+
+                    tags.push(matches[1].trim());
+                    console.log(matches);
+                  }
+
+                  currentBlock.payments.push({
+                    value: Number(infos[1]),
+                    description: text.trim(),
+                    payedOn: payedOn,
+                    tags: tags
+                  });
+                }
+              });
+            },
+            immediate: true
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
