@@ -20,13 +20,18 @@
             <textarea
               v-model="input"
               rows="10"
-              class="form-control form-control-sm"
+              class="form-control form-control-sm mb-1"
             ></textarea>
+
+            <button @click="save" class="btn btn-sm btn-primary">
+              Save Local
+              <span v-if="savedInput !== input">*</span>
+            </button>
           </div>
         </div>
 
         <div class="row">
-          <div v-for="block in data" class="col-12 col-sm-6">
+          <div v-for="block in dataReverse" class="col-12 col-sm-6">
             <h1 class="text-center">
               {{ monthName(block.month) }}/{{ block.year }}
             </h1>
@@ -59,16 +64,13 @@
       new Vue({
         el: "#app",
         data: {
-          input: `
-03/2020
-1000 salary
--70 payed on 11 dentist plan #health
--50 bus credit #transport #bus
-
-04/2020
-1000 salary
-                            `,
+          savedInput: "",
+          input: "",
           data: []
+        },
+
+        created() {
+          this.getSavedInput();
         },
 
         methods: {
@@ -84,6 +86,39 @@
 
           upperCaseFirstLetter(text) {
             return text.slice(0, 1).toUpperCase() + text.slice(1);
+          },
+
+          getSavedInput() {
+            let financialViewerContent = localStorage.getItem(
+              "financial-viewer"
+            );
+
+            if (financialViewerContent === null) {
+              this.savedInput = `
+03/2020
+1000 salary
+-70 payed on 11 dentist plan #health
+-50 bus credit #transport #bus
+
+04/2020
+1000 salary
+                            `;
+            } else {
+              this.savedInput = financialViewerContent;
+            }
+
+            this.input = this.savedInput;
+          },
+
+          save() {
+            localStorage.setItem("financial-viewer", this.input);
+            this.savedInput = this.input;
+          }
+        },
+
+        computed: {
+          dataReverse() {
+            return this.data.reverse();
           }
         },
 
@@ -134,7 +169,6 @@
                       text.slice(matches.index + matches[0].length);
 
                     tags.push(matches[1].trim());
-                    console.log(matches);
                   }
 
                   currentBlock.payments.push({
