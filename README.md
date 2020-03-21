@@ -1,11 +1,11 @@
 # financial-viewer
-A financial viewer to plan monthly. Edit the input textare and see it rendered.
+A financial viewer to plan monthly. Edit the input textarea and see it rendered.
 
 Example  
 ![Example](img/example.png)
 
 ## Patterns
-### 2 numbers/4 numbers: start a new block (month/year)
+### 2 numbers/4 numbers to start a new block (month/year)
 Example: 03/2020 for March/2020.
 
 ### Start with positive or negative number to create a payment line
