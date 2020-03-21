@@ -38,6 +38,10 @@
             <div v-for="payment in block.payments" class="row">
               <div class="col-3 text-right">{{ payment.value }}</div>
               <div class="col">
+                <span v-if="payment.receivedOn" class="badge badge-info mr-1">
+                  Received on {{ payment.receivedOn }}
+                </span>
+
                 <span v-if="payment.payedOn" class="badge badge-success mr-1">
                   Payed on {{ payment.payedOn }}
                 </span>
@@ -133,7 +137,7 @@
                 const rules = {
                   blockStart: /^(\d{2})\/(\d{4})$/,
                   payment: /^(-?[\d.]+) /,
-                  payedOn: /^payed on (\d{2}) ?/,
+                  actionOn: /^(payed|received) on (\d{2}) ?/,
                   tags: /#([^#]+)/
                 };
 
@@ -153,11 +157,19 @@
                   let text = line.slice(infos[0].length);
 
                   let payedOn = null,
+                    receivedOn = null,
                     tags = [];
 
-                  if (rules.payedOn.test(text)) {
-                    let matches = text.match(rules.payedOn);
-                    payedOn = matches[1];
+                  while (rules.actionOn.test(text)) {
+                    let matches = text.match(rules.actionOn);
+                    let action = matches[1];
+
+                    if (action === "payed") {
+                      payedOn = matches[2];
+                    } else if (action === "received") {
+                      receivedOn = matches[2];
+                    }
+
                     text = text.slice(matches[0].length);
                   }
 
@@ -175,6 +187,7 @@
                     value: Number(infos[1]),
                     description: text.trim(),
                     payedOn: payedOn,
+                    receivedOn: receivedOn,
                     tags: tags
                   });
                 }
