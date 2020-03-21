@@ -5,6 +5,11 @@ A financial viewer to plan monthly. Edit the input textarea and see it rendered.
 Example  
 ![Example](img/example.png)
 
+## Edit March 21st 2020
+
+It's now possible to visualize the month graph by tags.
+![Month Graph](img/month-graph.png)
+
 ## Patterns
 
 ### 2 numbers/4 numbers to start a new block (month/year)
