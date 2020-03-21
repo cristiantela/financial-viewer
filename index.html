@@ -132,7 +132,7 @@
               input.split("\n").forEach(line => {
                 const rules = {
                   blockStart: /^(\d{2})\/(\d{4})$/,
-                  payment: /^(-?\d+) /,
+                  payment: /^(-?[\d.]+) /,
                   payedOn: /^payed on (\d{2}) ?/,
                   tags: /#([^#]+)/
                 };
