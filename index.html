@@ -10,8 +10,6 @@
 
   <body>
     <div id="app">
-      <!-- <pre>{{ data }}</pre> -->
-
       <div class="container">
         <div class="row">
           <div class="col">
@@ -25,7 +23,7 @@
 
             <button @click="save" class="btn btn-sm btn-primary">
               Save Local
-              <span v-if="savedInput !== input">*</span>
+              <span v-if="unsavedInput">*</span>
             </button>
           </div>
         </div>
@@ -38,36 +36,56 @@
 
             <div class="row">
               <div class="col-12 col-sm-6">
-                <div v-for="payment in block.payments" class="row">
-                  <div class="col-3 text-right">{{ payment.value }}</div>
-                  <div class="col">
-                    <span
-                      v-if="payment.receivedOn"
-                      class="badge badge-info mr-1"
-                    >
-                      Received on {{ payment.receivedOn }}
-                    </span>
+                <div v-for="(payment, paymentIndex) in block.payments" :key="paymentIndex">
+                  <div v-if="payment.isEditing" class="row">
+                    <div class="col-3">
+                      <input v-model="payment.value" :ref="`${block.month}-${block.year}-${paymentIndex}-value`" @blur="payment.isEditing = false" type="number" class="form-control form-control-sm text-right">
+                    </div>
 
-                    <span
-                      v-if="payment.payedOn"
-                      class="badge badge-success mr-1"
-                    >
-                      Payed on {{ payment.payedOn }}
-                    </span>
-                    <span
-                      v-for="tag in payment.tags"
-                      class="badge badge-primary mr-1"
-                    >
-                      {{ tag }}
-                    </span>
-                    {{ upperCaseFirstLetter(payment.description) }}
+                    <div class="col">
+                      <input v-model="payment.description" :ref="`${block.month}-${block.year}-${paymentIndex}-description`" @blur="payment.isEditing = false" type="text" class="form-control form-control-sm">
+                    </div>
+                  </div>
+
+                  <div v-else class="row">
+                    <div @click="edit(block, paymentIndex, 'value')" class="col-3 text-right">{{ payment.value }}</div>
+
+                    <div class="col">
+                      <span
+                        v-if="payment.receivedOn"
+                        class="badge badge-info mr-1"
+                      >
+                        Received on {{ payment.receivedOn }}
+                      </span>
+
+                      <span
+                        v-if="payment.payedOn"
+                        class="badge badge-success mr-1"
+                      >
+                        Payed on {{ payment.payedOn }}
+                      </span>
+                      <span
+                        v-for="tag in payment.tags"
+                        class="badge badge-primary mr-1"
+                      >
+                        {{ tag }}
+                      </span>
+
+                      <span @click="edit(block, paymentIndex, 'description')">{{ upperCaseFirstLetter(payment.description) }}</span>
+                    </div>
                   </div>
                 </div>
 
                 <div class="row">
                   <div class="col-3 text-right">
                     {{ sumArray(block.payments.map(payment =>
-                    payment.value)).toFixed(2) }}
+                    Number(payment.value) || 0)).toFixed(2) }}
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col offset-3">
+                    <button @click="addPayment(block)" :disabled="unsavedInput" class="btn btn-sm btn-primary">Add Payment</button>
                   </div>
                 </div>
               </div>
@@ -222,7 +240,7 @@
 
           revenue(payments) {
             return this.sumArray(
-              payments.map(payment => payment.value).filter(value => value > 0)
+              payments.map(payment => Number(payment.value) || 0).filter(value => value > 0)
             );
           },
 
@@ -301,13 +319,44 @@
             return tags.filter(
               tag => !(tag.name === "others" && tag.value === 0)
             );
-          }
+          },
+
+          addPayment(block) {
+            block.payments.push({
+              value: 0,
+              description: '',
+              payedOn: '',
+              receivedOn: '',
+              tags: [],
+              isEditing: true,
+            });
+
+            this.$nextTick(() => {
+              this.$refs[`${block.month}-${block.year}-${block.payments.length - 1}-description`][0].focus();
+            });
+          },
+
+          edit(block, paymentIndex, attribute) {
+            if (this.unsavedInput) {
+              return false;
+            }
+
+            block.payments[paymentIndex].isEditing = true;
+
+            this.$nextTick(() => {
+              this.$refs[`${block.month}-${block.year}-${paymentIndex}-${attribute}`][0].focus();
+            });
+          },
         },
 
         computed: {
           dataReverse() {
             return this.data.reverse();
-          }
+          },
+
+          unsavedInput() {
+            return this.savedInput !== this.input;
+          },
         },
 
         watch: {
@@ -372,7 +421,8 @@
                     description: text.trim(),
                     payedOn: payedOn,
                     receivedOn: receivedOn,
-                    tags: tags
+                    tags: tags,
+                    isEditing: false,
                   });
                 }
               });
