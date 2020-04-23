@@ -399,6 +399,9 @@
 
           endEdit(payment) {
             payment.isEditing = false;
+
+            this.input = this.dataTransformed();
+            this.save();
           },
 
           mouseover(payment) {
@@ -426,11 +429,40 @@
               this.$refs[`${block.month}-${block.year}-${paymentIndex}-tags-${tagIndex}`][0].focus();
             });
           },
+
+          dataTransformed() {
+            let output = [];
+
+            this.data.forEach(block => {
+              output.push(`\n${block.month}/${block.year}`);
+
+              block.payments.forEach(payment => {
+                let tags = '';
+                let pre = [];
+
+                if (payment.tags.length !== 0) {
+                  tags = ` #${payment.tags.join(' #')}`;
+                }
+
+                if (payment.payedOn) {
+                  pre.push(` payed on ${payment.payedOn}`);
+                }
+
+                if (payment.receivedOn) {
+                  pre.push(` received on ${payment.receivedOn}`);
+                }
+
+                output.push(`${String(payment.value)}${pre.join('')} ${payment.description}${tags}`);
+              });
+            });
+
+            return output.join('\n').trim();
+          },
         },
 
         computed: {
           dataReverse() {
-            return this.data.reverse();
+            return this.data.slice(0).reverse();
           },
 
           unsavedInput() {
@@ -468,8 +500,8 @@
 
                   let text = line.slice(infos[0].length);
 
-                  let payedOn = null,
-                    receivedOn = null,
+                  let payedOn = '',
+                    receivedOn = '',
                     tags = [];
 
                   while (rules.actionOn.test(text)) {
