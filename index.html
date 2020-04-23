@@ -45,10 +45,14 @@
         </div>
 
         <div class="row">
-          <div v-for="block in dataReverse" class="col-12">
-            <h1 class="text-center">
-              {{ monthName(block.month) }}/{{ block.year }}
-            </h1>
+          <div v-for="(block, blockIndex) in dataReverse" :key="blockIndex" class="col-12">
+            <div class="text-center">
+              <span @click="removeMonth(block)" class="badge badge-danger">Remove</span>
+
+              <h1>
+                {{ monthName(block.month) }}/{{ block.year }}
+              </h1>
+            </div>
 
             <div class="row">
               <div class="col-12 col-sm-6">
@@ -65,6 +69,16 @@
                   </div>
 
                   <div v-else class="col">
+                    <span
+                      :class="[
+                        'badge badge-danger',
+                        {
+                          'd-none': !payment.isMouseOver,
+                        },
+                      ]"
+                      @click="removePayment(block, paymentIndex)"
+                    >Remove</span>
+
                     <span
                       v-for="type in [{
                         name: 'Received on',
@@ -395,6 +409,16 @@
             });
           },
 
+          removePayment(block, paymentIndex) {
+            if (this.unsavedInput) {
+              return false;
+            }
+
+            block.payments.splice(paymentIndex, 1);
+
+            this.formatAndSave();
+          },
+
           edit(block, paymentIndex, attribute, subIndex) {
             if (this.unsavedInput) {
               return false;
@@ -482,6 +506,10 @@
           },
 
           addMonth() {
+            if (this.unsavedInput) {
+              return false;
+            }
+
             let month = this.fill(this.month, '0', 2);
             let year = this.fill(this.year, '0', 4);
 
@@ -490,6 +518,16 @@
               year,
               payments: [],
             });
+
+            this.formatAndSave();
+          },
+
+          removeMonth(month) {
+            if (this.unsavedInput) {
+              return false;
+            }
+
+            this.data.splice(this.data.indexOf(month), 1);
 
             this.formatAndSave();
           },
