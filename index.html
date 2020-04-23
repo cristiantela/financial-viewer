@@ -28,6 +28,22 @@
           </div>
         </div>
 
+        <div class="row justify-content-center align-items-end">
+          <div class="col-3">
+            Month
+            <input v-model="month" type="text" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-3">
+            Year
+            <input v-model="year" type="text" class="form-control form-control-sm">
+          </div>
+
+          <div class="col-auto text-center">
+            <button @click="addMonth" class="btn btn-sm btn-primary">Add Month</button>
+          </div>
+        </div>
+
         <div class="row">
           <div v-for="block in dataReverse" class="col-12">
             <h1 class="text-center">
@@ -225,6 +241,8 @@
             }
           ],
           tagInput: '',
+          month: '',
+          year: '',
         },
 
         created() {
@@ -400,6 +418,10 @@
           endEdit(payment) {
             payment.isEditing = false;
 
+            this.formatAndSave();
+          },
+
+          formatAndSave() {
             this.input = this.dataTransformed();
             this.save();
           },
@@ -457,6 +479,29 @@
             });
 
             return output.join('\n').trim();
+          },
+
+          addMonth() {
+            let month = this.fill(this.month, '0', 2);
+            let year = this.fill(this.year, '0', 4);
+
+            this.data.push({
+              month,
+              year,
+              payments: [],
+            });
+
+            this.formatAndSave();
+          },
+
+          fill(text, fill, length) {
+            let output = String(text).substring(0, length);
+
+            for (let i = output.length; i < length; i++) {
+              output = `${fill}${output}`;
+            }
+
+            return output;
           },
         },
 
