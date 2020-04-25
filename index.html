@@ -25,6 +25,10 @@
               Save Local
               <span v-if="unsavedInput">*</span>
             </button>
+
+            <button @click="copy" class="btn btn-sm btn-primary">
+              Copy
+            </button>
           </div>
         </div>
 
@@ -309,6 +313,15 @@
           save() {
             localStorage.setItem("financial-viewer", this.input);
             this.savedInput = this.input;
+          },
+
+          copy() {
+            const textarea = document.createElement('textarea');
+            textarea.value = this.input;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
           },
 
           revenue(payments) {
