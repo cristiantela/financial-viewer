@@ -29,6 +29,10 @@
             <button @click="copy" class="btn btn-sm btn-primary">
               Copy
             </button>
+
+            <button @click="download" class="btn btn-sm btn-primary">
+              Download
+            </button>
           </div>
         </div>
 
@@ -322,6 +326,14 @@
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
+          },
+
+          download() {
+            const output = `data:text/plain;base64,${btoa(this.input)}`;
+            const a = document.createElement('a');
+            a.setAttribute('href', output);
+            a.setAttribute('download', 'financial planner');
+            a.click();
           },
 
           revenue(payments) {
