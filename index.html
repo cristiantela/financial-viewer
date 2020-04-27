@@ -33,6 +33,12 @@
             <button @click="download" class="btn btn-sm btn-primary">
               Download
             </button>
+
+            <button @click="openFileSelector" class="btn btn-sm btn-primary">
+              Import
+            </button>
+
+            <input @change="importFile" ref="file" type="file" class="d-none">
           </div>
         </div>
 
@@ -334,6 +340,30 @@
             a.setAttribute('href', output);
             a.setAttribute('download', 'financial planner');
             a.click();
+          },
+
+          openFileSelector() {
+            this.$refs.file.click();
+          },
+
+          importFile(event) {
+            const { files } = event.srcElement;
+
+            if (files.length < 1) {
+              return false;
+            }
+
+            const reader = new FileReader();
+            const file = files[0];
+
+            reader.addEventListener('load', (event) => {
+              this.input = reader.result;
+              this.save();
+            });
+
+            reader.readAsText(file);
+
+            event.srcElement.value = '';
           },
 
           revenue(payments) {
