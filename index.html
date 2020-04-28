@@ -75,7 +75,13 @@
                     <input v-model="payment.value" :ref="`${block.month}-${block.year}-${paymentIndex}-value`" @blur="endEdit(payment)" type="number" class="form-control form-control-sm text-right">
                   </div>
 
-                  <div v-else @click="edit(block, paymentIndex, 'value')" class="col-3 text-right">{{ payment.value }}</div>
+                  <div v-else @click="edit(block, paymentIndex, 'value')" class="col-3 text-right"
+                    :style="{
+                      textDecoration: payment.suspended ? 'line-through' : null,
+                    }"
+                  >
+                    {{ payment.value }}
+                  </div>
 
 
                   <div v-if="payment.isEditing === 'description'" class="col">
@@ -156,14 +162,19 @@
                       Add tag
                     </span>
 
-                    <span @click="edit(block, paymentIndex, 'description')">{{ upperCaseFirstLetter(payment.description) }}</span>
+                    <span @click="edit(block, paymentIndex, 'description')"
+                      :style="{
+                        textDecoration: payment.suspended ? 'line-through' : null,
+                      }"
+                    >
+                      {{ upperCaseFirstLetter(payment.description) }}
+                    </span>
                   </div>
                 </div>
 
                 <div class="row">
                   <div class="col-3 text-right">
-                    {{ sumArray(block.payments.map(payment =>
-                    Number(payment.value) || 0)).toFixed(2) }}
+                    {{ sumAllPayments(block.payments).toFixed(2) }}
                   </div>
                 </div>
 
@@ -368,13 +379,13 @@
 
           revenue(payments) {
             return this.sumArray(
-              payments.map(payment => Number(payment.value) || 0).filter(value => value > 0)
+              this.notSuspendedPayments(payments).map(payment => Number(payment.value) || 0).filter(value => value > 0)
             );
           },
 
           spent(payments) {
             return -this.sumArray(
-              payments.map(payment => Number(payment.value) || 0).filter(value => value < 0)
+              this.notSuspendedPayments(payments).map(payment => Number(payment.value) || 0).filter(value => value < 0)
             );
           },
 
@@ -388,7 +399,7 @@
               }
             ];
 
-            payments
+            this.notSuspendedPayments(payments)
               .filter(payment => payment.value < 0)
               .forEach(payment => {
                 if (payment.tags.length === 0) {
@@ -456,6 +467,7 @@
               payedOn: '',
               receivedOn: '',
               tags: [],
+              suspended: false,
               isEditing: 'description',
             });
 
@@ -596,6 +608,16 @@
 
             return output;
           },
+
+          notSuspendedPayments(payments) {
+            return payments.filter(payment => !payment.suspended);
+          },
+
+          sumAllPayments(payments) {
+            return this.sumArray(
+              this.notSuspendedPayments(payments).map(payment => Number(payment.value) || 0)
+            );
+          },
         },
 
         computed: {
@@ -618,7 +640,7 @@
               input.split("\n").forEach(line => {
                 const rules = {
                   blockStart: /^(\d{2})\/(\d{4})$/,
-                  payment: /^(-?[\d.]+) /,
+                  payment: /^(--)?(-?[\d.]+) /,
                   actionOn: /^(payed|received) on (\d{2}) ?/,
                   tags: /#([^#]+)/
                 };
@@ -640,7 +662,8 @@
 
                   let payedOn = '',
                     receivedOn = '',
-                    tags = [];
+                    tags = [],
+                    suspended = infos[1] === '--';
 
                   while (rules.actionOn.test(text)) {
                     let matches = text.match(rules.actionOn);
@@ -666,11 +689,12 @@
                   }
 
                   currentBlock.payments.push({
-                    value: Number(infos[1]),
+                    value: Number(infos[2]),
                     description: text.trim(),
                     payedOn: payedOn,
                     receivedOn: receivedOn,
                     tags: tags,
+                    suspended,
                     isEditing: false,
                     isMouseOver: false,
                   });
