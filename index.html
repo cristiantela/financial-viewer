@@ -335,10 +335,10 @@
           },
 
           download() {
-            const output = `data:text/plain;base64,${btoa(this.input)}`;
+            const blob = new Blob([this.input]);
             const a = document.createElement('a');
-            a.setAttribute('href', output);
-            a.setAttribute('download', 'financial planner');
+            a.setAttribute('href', URL.createObjectURL(blob));
+            a.setAttribute('download', 'financial planner.txt');
             a.click();
           },
 
