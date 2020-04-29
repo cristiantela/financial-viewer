@@ -59,7 +59,7 @@
         </div>
 
         <div class="row">
-          <div v-for="(block, blockIndex) in dataReverse" :key="blockIndex" class="col-12">
+          <div v-for="(block, blockIndex) in dataReverse" :key="blockIndex">
             <div class="text-center">
               <span @click="removeMonth(block)" class="badge badge-danger">Remove</span>
 
@@ -80,7 +80,7 @@
                       textDecoration: payment.suspended ? 'line-through' : null,
                     }"
                   >
-                    {{ payment.value }}
+                    {{ calculateFinalValue(payment) }}
                   </div>
 
 
@@ -134,21 +134,7 @@
                       <span v-else>{{ payment[type.attribute] }}</span>
                     </span>
 
-                    <span
-                      v-for="(tag, index) in payment.tags"
-                      :key="index"
-                      class="badge badge-primary mr-1"
-                    >
-                      <input v-if="payment.isEditing === `tags-${index}`" v-model="tagInput" type="text" :ref="`${block.month}-${block.year}-${paymentIndex}-tags-${index}`"
-                        @blur="() => {
-                          payment.tags[index] = tagInput;
-                          tagInput = '';
-                          endEdit(payment);
-                        }"
-                        class="form-control form-control-sm" 
-                      >
-                      <span v-else @click="edit(block, paymentIndex, 'tags', index)">{{ tag }}</span>
-                    </span>
+                    <tags :data="payment.tags"></tags>
 
                     <span 
                       :class="[
@@ -169,6 +155,8 @@
                     >
                       {{ upperCaseFirstLetter(payment.description) }}
                     </span>
+
+                    <payment v-for="(subPayment, subPaymentIndex) in payment.children" :key="paymentIndex + '-' + subPaymentIndex" :data="subPayment"></payment>
                   </div>
                 </div>
 
@@ -259,6 +247,34 @@
     </div>
 
     <script>
+      Vue.component('payment', {
+        props: ['data'],
+        template: `
+          <div>
+            {{ data.value }}
+
+            <tags :data="data.tags"></tags>
+
+            {{ data.description }}
+          </div>
+        `,
+      });
+
+      Vue.component('tags', {
+        props: ['data'],
+        template: `
+          <span>
+            <span
+              v-for="(tag, index) in data"
+              :key="index"
+              class="badge badge-primary mr-1"
+            >
+              {{ tag }}
+            </span>
+          </span>
+        `,
+      });
+
       new Vue({
         el: "#app",
         data: {
@@ -399,13 +415,15 @@
               }
             ];
 
-            this.notSuspendedPayments(payments)
+            this.notSuspendedPayments(
+              this.paymentsInline(payments)
+            )
               .filter(payment => payment.value < 0)
               .forEach(payment => {
                 if (payment.tags.length === 0) {
                   tags.find(
                     tag => tag.name === "others"
-                  ).value += -payment.value;
+                  ).value += -this.calculateFinalValue(payment);
                 } else {
                   payment.tags.forEach(tag => {
                     const tagDivisions = tag.split("/");
@@ -414,11 +432,11 @@
                     const t = tags.find(t => t.name === tagName);
 
                     if (t) {
-                      t.value += -payment.value;
+                      t.value += -this.calculateFinalValue(payment);
                     } else {
                       tags.push({
                         name: tagName,
-                        value: -payment.value
+                        value: -this.calculateFinalValue(payment),
                       });
                     }
                   });
@@ -468,7 +486,9 @@
               receivedOn: '',
               tags: [],
               suspended: false,
+              children: [],
               isEditing: 'description',
+              isMouseOver: false,
             });
 
             this.$nextTick(() => {
@@ -618,6 +638,30 @@
               this.notSuspendedPayments(payments).map(payment => Number(payment.value) || 0)
             );
           },
+
+          calculateFinalValue(payment) {
+            const children = payment.children ? payment.children.map(payment => payment.value) : [];
+
+            let discount = 0;
+
+            if (children.length) {
+              discount = children.reduce((value, current) => value + current);
+            }
+
+            return Number((payment.value - discount).toFixed(2));
+          },
+
+          paymentsInline(payments) {
+            const output = [];
+
+            payments.forEach(payment => {
+              output.push(payment);
+
+              payment.children.forEach(subPayment => output.push(subPayment));
+            });
+
+            return output;
+          },
         },
 
         computed: {
@@ -640,7 +684,7 @@
               input.split("\n").forEach(line => {
                 const rules = {
                   blockStart: /^(\d{2})\/(\d{4})$/,
-                  payment: /^(--)?(-?[\d.]+) /,
+                  payment: /^(  )?(--)?(-?[\d.]+) /,
                   actionOn: /^(payed|received) on (\d{2}) ?/,
                   tags: /#([^#]+)/
                 };
@@ -663,7 +707,7 @@
                   let payedOn = '',
                     receivedOn = '',
                     tags = [],
-                    suspended = infos[1] === '--';
+                    suspended = infos[2] === '--';
 
                   while (rules.actionOn.test(text)) {
                     let matches = text.match(rules.actionOn);
@@ -688,16 +732,25 @@
                     tags.push(matches[1].trim());
                   }
 
-                  currentBlock.payments.push({
-                    value: Number(infos[2]),
+                  const payment = {
+                    value: Number(infos[3]),
                     description: text.trim(),
                     payedOn: payedOn,
                     receivedOn: receivedOn,
                     tags: tags,
                     suspended,
-                    isEditing: false,
-                    isMouseOver: false,
-                  });
+                  };
+
+                  if (infos[1] === '  ') {
+                    currentBlock.payments[currentBlock.payments.length - 1].children.push(payment);
+                  } else {
+                    currentBlock.payments.push({
+                      ...payment,
+                      children: [],
+                      isEditing: false,
+                      isMouseOver: false,
+                    });
+                  }
                 }
               });
             },
