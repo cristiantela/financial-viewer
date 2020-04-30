@@ -61,88 +61,21 @@
             <div class="col-12 col-sm-6">
               <payment v-for="(payment, paymentIndex) in block.payments" :key="paymentIndex" :payment="payment"></payment>
 
-              <div class="row">
-                <div class="col-3 text-right">
-                  {{ sumAllPayments(block.payments).toFixed(2) }}
-                </div>
-              </div>
+              <payment :payment="{
+                value: sumAllPayments(block.payments).toFixed(2),
+                description: '',
+              }"></payment>
 
-              <div class="row">
-                <div class="col offset-3">
+              <b-row>
+                <b-col offset="3">
                   <button @click="addPayment(block)" :disabled="unsavedInput" class="btn btn-sm btn-primary">Add Payment</button>
-                </div>
-              </div>
+                </b-col>
+              </b-row>
             </div>
 
-            <div class="col-12 col-sm-6">
-              <div class="row mb-4">
-                <div class="col">
-                  <div class="row">
-                    <div class="col text-right">
-                      Revenue {{ revenue(block.payments).toFixed(2) }}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div
-                      v-for="(color, index) in colors"
-                      :style="{
-                    width: color.width + '%',
-                    height: '.5em',
-                    backgroundColor: color.color,
-                    display: 'inline-block'
-                  }"
-                  :key="index"
-                    ></div>
-                  </div>
-
-                  <div>
-                    <div
-                      v-for="(tag, index) in groupTags(block.payments)"
-                      :style="{
-                        width: tag.percentage + '%',
-                        height: '1em',
-                        backgroundColor: tag.color,
-                        display: 'inline-block'
-                      }"
-                      :key="index"
-                    ></div>
-                    {{ (spent(block.payments) / revenue(block.payments) *
-                    100).toFixed(1) }}%
-                  </div>
-
-                  <div class="row">
-                    <div class="col text-right">
-                      <div
-                        :style="{
-                        width: spent(block.payments) / revenue(block.payments) * 100 + '%',
-                      }"
-                      >
-                        Spent {{ spent(block.payments).toFixed(2) }}
-                        <br />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-for="(tag, index) in groupTags(block.payments)" :key="index" class="row">
-                <div class="col-2 text-right">{{ tag.value.toFixed(2) }}</div>
-                <div class="col-3 text-right">
-                  {{ tag.name }}
-                </div>
-                <div class="col">
-                  <div
-                    :style="{
-                    width: tag.percentage + '%',
-                    height: '1em',
-                    backgroundColor: tag.color,
-                    display: 'inline-block'
-                  }"
-                  ></div>
-                  {{ tag.percentage.toFixed(1) }}%
-                </div>
-              </div>
-            </div>
+            <b-col cols="12" sm="6">
+              <tags-percentage :payments="block.payments"></tags-percentage>
+            </b-col>
           </div>
         </div>
       </div>
@@ -152,11 +85,13 @@
 
 <script>
 import Payment from "./components/Payment.vue";
+import TagsPercentage from "./components/TagsPercentage.vue";
 
 export default {
   name: "App",
   components: {
     Payment,
+    TagsPercentage,
   },
 
   data() {
@@ -164,20 +99,6 @@ export default {
       savedInput: "",
       input: "",
       data: [],
-      colors: [
-        {
-          width: 60,
-          color: "#2ecc71"
-        },
-        {
-          width: 10,
-          color: "#f39c12"
-        },
-        {
-          width: 30,
-          color: "#e74c3c"
-        }
-      ],
       tagInput: '',
       month: '',
       year: '',
@@ -273,91 +194,6 @@ export default {
       event.srcElement.value = '';
     },
 
-    revenue(payments) {
-      return this.sumArray(
-        this.notSuspendedPayments(payments).map(payment => Number(payment.value) || 0).filter(value => value > 0)
-      );
-    },
-
-    spent(payments) {
-      return -this.sumArray(
-        this.notSuspendedPayments(payments).map(payment => Number(payment.value) || 0).filter(value => value < 0)
-      );
-    },
-
-    groupTags(payments) {
-      const revenue = this.revenue(payments);
-
-      const tags = [
-        {
-          name: "others",
-          value: 0
-        }
-      ];
-
-      this.notSuspendedPayments(
-        this.paymentsInline(payments)
-      )
-        .filter(payment => payment.value < 0)
-        .forEach(payment => {
-          if (payment.tags.length === 0) {
-            tags.find(
-              tag => tag.name === "others"
-            ).value += -this.calculateFinalValue(payment);
-          } else {
-            payment.tags.forEach(tag => {
-              const tagDivisions = tag.split("/");
-              const tagName = tagDivisions[0];
-
-              const t = tags.find(t => t.name === tagName);
-
-              if (t) {
-                t.value += -this.calculateFinalValue(payment);
-              } else {
-                tags.push({
-                  name: tagName,
-                  value: -this.calculateFinalValue(payment),
-                });
-              }
-            });
-          }
-        });
-
-      tags.sort((a, b) => {
-        if (a.value > b.value) {
-          return -1;
-        } else if (a.value < b.value) {
-          return 1;
-        }
-
-        return 0;
-      });
-
-      const colors = [
-        "#9b59b6",
-        "#2980b9",
-        "#27ae60",
-        "#16a085",
-        "#2c3e50",
-        "#f1c40f",
-        "#c0392b",
-        "#e67e22",
-        "#2ecc71",
-        "#f39c12"
-      ];
-
-      let counter = 0;
-
-      tags.forEach(tag => {
-        tag.percentage = (tag.value / revenue) * 100;
-        tag.color = colors[counter++ % colors.length];
-      });
-
-      return tags.filter(
-        tag => !(tag.name === "others" && tag.value === 0)
-      );
-    },
-
     addPayment(block) {
       block.payments.push({
         value: 0,
@@ -445,30 +281,6 @@ export default {
       return this.sumArray(
         this.notSuspendedPayments(payments).map(payment => Number(payment.value) || 0)
       );
-    },
-
-    calculateFinalValue(payment) {
-      const children = payment.children ? payment.children.map(payment => payment.value) : [];
-
-      let discount = 0;
-
-      if (children.length) {
-        discount = children.reduce((value, current) => value + current);
-      }
-
-      return Number((payment.value - discount).toFixed(2));
-    },
-
-    paymentsInline(payments) {
-      const output = [];
-
-      payments.forEach(payment => {
-        output.push(payment);
-
-        payment.children.forEach(subPayment => output.push(subPayment));
-      });
-
-      return output;
     },
   },
 

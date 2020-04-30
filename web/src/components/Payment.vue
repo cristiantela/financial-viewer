@@ -8,8 +8,8 @@
       {{ calculateFinalValue(payment) }}
     </b-col>
 
-    <div class="col">
-      <span
+    <b-col>
+      <b-badge
         v-for="type in [{
           name: 'Received on',
           attribute: 'receivedOn',
@@ -21,16 +21,16 @@
         }]"
         :key="type.attribute"
         :class="[
-          `badge badge-${type.color} mr-1`,
+          `mr-1`,
           {
             'd-none': !payment[type.attribute],
           },
         ]"
+        :variant="type.color"
       >
         {{ type.name }}
-
-        <span>{{ payment[type.attribute] }}</span>
-      </span>
+        {{ payment[type.attribute] }}
+      </b-badge>
 
       <tags :tags="payment.tags"></tags>
 
@@ -43,7 +43,7 @@
       </span>
 
       <payment v-for="(subPayment, subPaymentIndex) in payment.children" :key="subPaymentIndex" :payment="subPayment"></payment>
-    </div>
+    </b-col>
   </b-row>
 </template>
 
