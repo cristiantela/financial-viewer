@@ -1,95 +1,97 @@
 <template>
-  <div>
-    <b-container>
-      <b-row>
-        <b-col>
-          Input
+  <b-container>
+    <add-payment-modal ref="addPaymentModal"></add-payment-modal>
 
-          <b-form-textarea
-            v-model="input"
-            rows="10"
-            class="mb-1"
-            size="sm"
-          ></b-form-textarea>
+    <b-row>
+      <b-col>
+        Input
 
-          <b-button @click="save" class="mr-1" size="sm" variant="primary">
-            Save Local
-            <span v-if="unsavedInput">*</span>
-          </b-button>
+        <b-form-textarea
+          v-model="input"
+          rows="10"
+          class="mb-1"
+          size="sm"
+        ></b-form-textarea>
 
-          <b-button @click="copy" class="mr-1" size="sm" variant="primary">
-            Copy
-          </b-button>
+        <b-button @click="save" class="mr-1" size="sm" variant="primary">
+          Save Local
+          <span v-if="unsavedInput">*</span>
+        </b-button>
 
-          <b-button @click="download" class="mr-1" size="sm" variant="primary">
-            Download
-          </b-button>
+        <b-button @click="copy" class="mr-1" size="sm" variant="primary">
+          Copy
+        </b-button>
 
-          <b-button @click="openFileSelector" class="mr-1" size="sm" variant="primary">
-            Import
-          </b-button>
+        <b-button @click="download" class="mr-1" size="sm" variant="primary">
+          Download
+        </b-button>
 
-          <input @change="importFile" ref="file" type="file" class="d-none">
-        </b-col>
-      </b-row>
+        <b-button @click="openFileSelector" class="mr-1" size="sm" variant="primary">
+          Import
+        </b-button>
 
-      <b-row class="justify-content-center align-items-end">
-        <b-col cols="3">
-          Month
-          <b-form-input size="sm" v-model="month" type="text"/>
-        </b-col>
+        <input @change="importFile" ref="file" type="file" class="d-none">
+      </b-col>
+    </b-row>
 
-        <b-col cols="3">
-          Year
-          <b-form-input size="sm" v-model="year" type="text"/>
-        </b-col>
+    <b-row class="justify-content-center align-items-end">
+      <b-col cols="3">
+        Month
+        <b-form-input size="sm" v-model="month" type="text"/>
+      </b-col>
 
-        <b-col cols="auto" class="text-center">
-          <b-button size="sm" @click="addMonth" variant="primary">Add Month</b-button>
-        </b-col>
-      </b-row>
+      <b-col cols="3">
+        Year
+        <b-form-input size="sm" v-model="year" type="text"/>
+      </b-col>
 
-      <div class="row">
-        <div v-for="(block, blockIndex) in dataReverse" :key="blockIndex" class="w-100">
-          <div class="text-center">
-            <h1>
-              {{ monthName(block.month) }}/{{ block.year }}
-            </h1>
-          </div>
+      <b-col cols="auto" class="text-center">
+        <b-button size="sm" @click="addMonth" variant="primary">Add Month</b-button>
+      </b-col>
+    </b-row>
 
-          <div class="row">
-            <div class="col-12 col-sm-6">
-              <payment v-for="(payment, paymentIndex) in block.payments" :key="paymentIndex" :payment="payment"></payment>
-
-              <payment :payment="{
-                value: sumAllPayments(block.payments).toFixed(2),
-                description: '',
-              }"></payment>
-
-              <b-row>
-                <b-col offset="3">
-                  <button @click="addPayment(block)" :disabled="unsavedInput" class="btn btn-sm btn-primary">Add Payment</button>
-                </b-col>
-              </b-row>
-            </div>
-
-            <b-col cols="12" sm="6">
-              <tags-percentage :payments="block.payments"></tags-percentage>
-            </b-col>
-          </div>
+    <b-row>
+      <div v-for="(block, blockIndex) in dataReverse" :key="blockIndex" class="w-100">
+        <div class="text-center">
+          <h1>
+            {{ monthName(block.month) }}/{{ block.year }}
+          </h1>
         </div>
+
+        <b-row>
+          <b-col cols="12" sm="6">
+            <payment v-for="(payment, paymentIndex) in block.payments" :key="paymentIndex" :payment="payment"></payment>
+
+            <payment :payment="{
+              value: sumAllPayments(block.payments).toFixed(2),
+              description: '',
+            }"></payment>
+
+            <b-row>
+              <b-col offset="3">
+                <b-button @click="openAddPaymentModal" :disabled="unsavedInput" size="sm" variant="primary">Add Payment</b-button>
+              </b-col>
+            </b-row>
+          </b-col>
+
+          <b-col cols="12" sm="6">
+            <tags-percentage :payments="block.payments"></tags-percentage>
+          </b-col>
+        </b-row>
       </div>
-    </b-container>
-  </div>
+    </b-row>
+  </b-container>
 </template>
 
 <script>
+import AddPaymentModal from "./components/AddPaymentModal.vue";
 import Payment from "./components/Payment.vue";
 import TagsPercentage from "./components/TagsPercentage.vue";
 
 export default {
   name: "App",
   components: {
+    AddPaymentModal,
     Payment,
     TagsPercentage,
   },
@@ -110,6 +112,10 @@ export default {
   },
 
   methods: {
+    openAddPaymentModal() {
+      this.$refs['addPaymentModal'].show();
+    },
+
     monthName(month) {
       return "January,February,March,April,May,June,July,August,September,November,December".split(
         ","
