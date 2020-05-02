@@ -26,50 +26,78 @@
           Download
         </b-button>
 
-        <b-button @click="openFileSelector" class="mr-1" size="sm" variant="primary">
+        <b-button
+          @click="openFileSelector"
+          class="mr-1"
+          size="sm"
+          variant="primary"
+        >
           Import
         </b-button>
 
-        <input @change="importFile" ref="file" type="file" class="d-none">
+        <input @change="importFile" ref="file" type="file" class="d-none" />
       </b-col>
     </b-row>
 
     <b-row class="justify-content-center align-items-end">
       <b-col cols="3">
         Month
-        <b-form-input size="sm" v-model="month" type="text"/>
+        <b-form-input size="sm" v-model="month" type="text" />
       </b-col>
 
       <b-col cols="3">
         Year
-        <b-form-input size="sm" v-model="year" type="text"/>
+        <b-form-input size="sm" v-model="year" type="text" />
       </b-col>
 
       <b-col cols="auto" class="text-center">
-        <b-button size="sm" @click="addMonth" variant="primary">Add Month</b-button>
+        <b-button size="sm" @click="addMonth" variant="primary"
+          >Add Month</b-button
+        >
       </b-col>
     </b-row>
 
     <b-row>
-      <div v-for="(block, blockIndex) in dataReverse" :key="blockIndex" class="w-100">
+      <div
+        v-for="block in groupPaymentsByMonths"
+        :key="`${block.year}-${block.month}`"
+        class="w-100"
+      >
         <div class="text-center">
-          <h1>
-            {{ monthName(block.month) }}/{{ block.year }}
-          </h1>
+          <h1>{{ monthName(block.month) }}/{{ block.year }}</h1>
         </div>
 
         <b-row>
           <b-col cols="12" sm="6">
-            <payment v-for="(payment, paymentIndex) in block.payments" :key="paymentIndex" :payment="payment"></payment>
+            <payment
+              v-for="payment in block.payments"
+              :key="payment.id"
+              :payment="payment"
+            ></payment>
 
-            <payment :payment="{
-              value: sumAllPayments(block.payments).toFixed(2),
-              description: '',
-            }"></payment>
+            <payment
+              :payment="{
+                value: sumAllPayments(block.payments).toFixed(2),
+                description: '',
+              }"
+              hide-controls
+            ></payment>
 
             <b-row>
               <b-col offset="3">
-                <b-button @click="openAddPaymentModal" :disabled="unsavedInput" size="sm" variant="primary">Add Payment</b-button>
+                <b-button
+                  @click="
+                    openAddPaymentModal({
+                      year: block.year,
+                      month: block.month,
+                    })
+                  "
+                  :disabled="unsavedInput"
+                  size="sm"
+                  variant="primary"
+                >
+                  Add Payment
+                </b-button>
               </b-col>
             </b-row>
           </b-col>
@@ -87,6 +115,7 @@
 import AddPaymentModal from "./components/AddPaymentModal.vue";
 import Payment from "./components/Payment.vue";
 import TagsPercentage from "./components/TagsPercentage.vue";
+import { mapState } from "vuex";
 
 export default {
   name: "App",
@@ -101,19 +130,20 @@ export default {
       savedInput: "",
       input: "",
       data: [],
-      tagInput: '',
-      month: '',
-      year: '',
-    }
+      tagInput: "",
+      month: "",
+      year: "",
+    };
   },
 
   created() {
+    this.$store.dispatch("payments/getAllPayments");
     this.getSavedInput();
   },
 
   methods: {
-    openAddPaymentModal() {
-      this.$refs['addPaymentModal'].show();
+    openAddPaymentModal(data) {
+      this.$refs["addPaymentModal"].show(data);
     },
 
     monthName(month) {
@@ -133,9 +163,7 @@ export default {
     },
 
     getSavedInput() {
-      let financialViewerContent = localStorage.getItem(
-        "financial-viewer"
-      );
+      let financialViewerContent = localStorage.getItem("financial-viewer");
 
       if (financialViewerContent === null) {
         this.savedInput = `
@@ -160,19 +188,19 @@ export default {
     },
 
     copy() {
-      const textarea = document.createElement('textarea');
+      const textarea = document.createElement("textarea");
       textarea.value = this.input;
       document.body.appendChild(textarea);
       textarea.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(textarea);
     },
 
     download() {
       const blob = new Blob([this.input]);
-      const a = document.createElement('a');
-      a.setAttribute('href', URL.createObjectURL(blob));
-      a.setAttribute('download', 'financial planner.txt');
+      const a = document.createElement("a");
+      a.setAttribute("href", URL.createObjectURL(blob));
+      a.setAttribute("download", "financial planner.txt");
       a.click();
     },
 
@@ -190,31 +218,31 @@ export default {
       const reader = new FileReader();
       const file = files[0];
 
-      reader.addEventListener('load', () => {
+      reader.addEventListener("load", () => {
         this.input = reader.result;
         this.save();
       });
 
       reader.readAsText(file);
 
-      event.srcElement.value = '';
+      event.srcElement.value = "";
     },
 
     addPayment(block) {
       block.payments.push({
         value: 0,
-        description: '',
-        payedOn: '',
-        receivedOn: '',
+        description: "",
+        payedOn: "",
+        receivedOn: "",
         tags: [],
         suspended: false,
         children: [],
-        isEditing: 'description',
+        isEditing: "description",
         isMouseOver: false,
       });
 
       this.$nextTick(() => {
-        this.edit(block, block.payments.length - 1, 'description');
+        this.edit(block, block.payments.length - 1, "description");
       });
     },
 
@@ -226,15 +254,15 @@ export default {
     dataTransformed() {
       let output = [];
 
-      this.data.forEach(block => {
+      this.data.forEach((block) => {
         output.push(`\n${block.month}/${block.year}`);
 
-        block.payments.forEach(payment => {
-          let tags = '';
+        block.payments.forEach((payment) => {
+          let tags = "";
           let pre = [];
 
           if (payment.tags.length !== 0) {
-            tags = ` #${payment.tags.join(' #')}`;
+            tags = ` #${payment.tags.join(" #")}`;
           }
 
           if (payment.payedOn) {
@@ -245,11 +273,15 @@ export default {
             pre.push(` received on ${payment.receivedOn}`);
           }
 
-          output.push(`${String(payment.value)}${pre.join('')} ${payment.description}${tags}`);
+          output.push(
+            `${String(payment.value)}${pre.join("")} ${
+              payment.description
+            }${tags}`
+          );
         });
       });
 
-      return output.join('\n').trim();
+      return output.join("\n").trim();
     },
 
     addMonth() {
@@ -257,8 +289,8 @@ export default {
         return false;
       }
 
-      let month = this.fill(this.month, '0', 2);
-      let year = this.fill(this.year, '0', 4);
+      let month = this.fill(this.month, "0", 2);
+      let year = this.fill(this.year, "0", 4);
 
       this.data.push({
         month,
@@ -280,17 +312,52 @@ export default {
     },
 
     notSuspendedPayments(payments) {
-      return payments.filter(payment => !payment.suspended);
+      return payments.filter((payment) => !payment.suspended);
     },
 
     sumAllPayments(payments) {
       return this.sumArray(
-        this.notSuspendedPayments(payments).map(payment => Number(payment.value) || 0)
+        this.notSuspendedPayments(payments).map(
+          (payment) => Number(payment.value) || 0
+        )
       );
     },
   },
 
   computed: {
+    ...mapState({
+      payments: (state) => state.payments.all,
+    }),
+
+    months() {
+      const months = this.payments.map((payment) => ({
+        year: payment.year,
+        month: payment.month,
+      }));
+
+      return months.filter(
+        (month, index) =>
+          index ===
+          months.findIndex((localMonth) => {
+            return (
+              localMonth.year === month.year && localMonth.month === month.month
+            );
+          })
+      );
+    },
+
+    groupPaymentsByMonths() {
+      return this.months.map(({ year, month }) => {
+        return {
+          year,
+          month,
+          payments: this.payments.filter(
+            (payment) => payment.year === year && payment.month === month
+          ),
+        };
+      });
+    },
+
     dataReverse() {
       return this.data.slice(0).reverse();
     },
@@ -307,12 +374,12 @@ export default {
 
         let currentBlock = null;
 
-        input.split("\n").forEach(line => {
+        input.split("\n").forEach((line) => {
           const rules = {
             blockStart: /^(\d{2})\/(\d{4})$/,
             payment: /^( {2})?(--)?(-?[\d.]+) /,
             actionOn: /^(payed|received) on (\d{2}) ?/,
-            tags: /#([^#]+)/
+            tags: /#([^#]+)/,
           };
 
           if (rules.blockStart.test(line)) {
@@ -321,7 +388,7 @@ export default {
             currentBlock = {
               month: infos[1],
               year: infos[2],
-              payments: []
+              payments: [],
             };
 
             this.data.push(currentBlock);
@@ -330,10 +397,10 @@ export default {
 
             let text = line.slice(infos[0].length);
 
-            let payedOn = '',
-              receivedOn = '',
+            let payedOn = "",
+              receivedOn = "",
               tags = [],
-              suspended = infos[2] === '--';
+              suspended = infos[2] === "--";
 
             while (rules.actionOn.test(text)) {
               let matches = text.match(rules.actionOn);
@@ -367,8 +434,10 @@ export default {
               suspended,
             };
 
-            if (infos[1] === '  ') {
-              currentBlock.payments[currentBlock.payments.length - 1].children.push(payment);
+            if (infos[1] === "  ") {
+              currentBlock.payments[
+                currentBlock.payments.length - 1
+              ].children.push(payment);
             } else {
               currentBlock.payments.push({
                 ...payment,
@@ -380,8 +449,8 @@ export default {
           }
         });
       },
-      immediate: true
-    }
-  }
+      immediate: true,
+    },
+  },
 };
 </script>

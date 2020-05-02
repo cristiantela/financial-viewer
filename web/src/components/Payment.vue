@@ -1,6 +1,8 @@
 <template>
   <b-row>
-    <b-col cols="3" class="text-right"
+    <b-col
+      cols="3"
+      class="text-right"
       :style="{
         textDecoration: payment.suspended ? 'line-through' : null,
       }"
@@ -9,102 +11,133 @@
     </b-col>
 
     <b-col>
-      <b-badge
-        v-for="type in [{
-          name: 'Received on',
-          attribute: 'receivedOn',
-          color: 'info',
-        }, {
-          name: 'Payed on',
-          attribute: 'payedOn',
-          color: 'success',
-        }]"
-        :key="type.attribute"
-        :class="[
-          `mr-1`,
-          {
-            'd-none': !payment[type.attribute],
-          },
-        ]"
-        :variant="type.color"
-      >
-        {{ type.name }}
-        {{ payment[type.attribute] }}
-      </b-badge>
+      <b-row>
+        <b-col>
+          <b-spinner
+            v-if="payment.status === 'uploading'"
+            variant="primary"
+            small
+            class="mr-1"
+          ></b-spinner>
 
-      <tags :tags="payment.tags"></tags>
+          <b-icon
+            v-else-if="payment.error"
+            icon="exclamation-circle-fill"
+            variant="danger"
+            title="Error"
+            v-b-popover.hover.bottomright="payment.error"
+            class="mr-1"
+          ></b-icon>
 
-      <span
-        :style="{
-          textDecoration: payment.suspended ? 'line-through' : null,
-        }"
-      >
-        {{ upperCaseFirstLetter(payment.description) }}
-      </span>
+          <b-badge
+            v-if="payment.date"
+            class="mr-1"
+            :variant="payment.value > 0 ? 'info' : 'success'"
+          >
+            {{ payment.value > 0 ? "Received on" : "Payed on" }}
+            {{ payment.date }}
+          </b-badge>
 
-      <payment v-for="(subPayment, subPaymentIndex) in payment.children" :key="subPaymentIndex" :payment="subPayment"></payment>
+          <tags :tags="payment.tags"></tags>
+
+          <span
+            :style="{
+              textDecoration: payment.suspended ? 'line-through' : null,
+            }"
+          >
+            {{ upperCaseFirstLetter(payment.description) }}
+          </span>
+
+          <payment
+            v-for="(subPayment, subPaymentIndex) in payment.children"
+            :key="subPaymentIndex"
+            :payment="subPayment"
+          ></payment>
+        </b-col>
+
+        <b-col v-if="!hideControls" cols="auto">
+          <b-dropdown right variant="link" no-caret size="sm">
+            <template v-slot:button-content>
+              <b-icon icon="three-dots-vertical" variant="secondary"></b-icon>
+            </template>
+
+            <b-dropdown-item @click="removePayment(payment)" href="#" size="sm"
+              >Remove</b-dropdown-item
+            >
+          </b-dropdown>
+        </b-col>
+      </b-row>
     </b-col>
   </b-row>
 </template>
 
 <script>
+import Tags from "./Tags.vue";
+import { mapActions } from "vuex";
+export default {
+  name: "payment",
 
-  import Tags from "./Tags.vue";
-  export default {
-    name: 'payment',
+  props: {
+    payment: Object,
+    hideControls: Boolean,
+  },
 
-    props: ['payment'],
+  components: {
+    Tags,
+  },
 
-    components: {
-      Tags,
+  data() {
+    return {};
+  },
+
+  methods: {
+    ...mapActions("payments", ["removePayment"]),
+
+    endEdit(payment) {
+      payment.isEditing = false;
+
+      this.formatAndSave();
     },
 
-    data() {
-      return {};
+    edit(block, paymentIndex, attribute, subIndex) {
+      if (this.unsavedInput) {
+        return false;
+      }
+
+      let complement = "";
+
+      if (attribute === "tags") {
+        complement = `-${subIndex}`;
+
+        this.tagInput = block.payments[paymentIndex].tags[subIndex];
+      }
+
+      block.payments[paymentIndex].isEditing = attribute + complement;
+
+      this.$nextTick(() => {
+        this.$refs[
+          `${block.month}-${block.year}-${paymentIndex}-${attribute}${complement}`
+        ][0].focus();
+      });
     },
 
-    methods: {
-      endEdit(payment) {
-        payment.isEditing = false;
+    calculateFinalValue(payment) {
+      const children = payment.children
+        ? payment.children.map((payment) => payment.value)
+        : [];
 
-        this.formatAndSave();
-      },
+      let discount = 0;
 
-      edit(block, paymentIndex, attribute, subIndex) {
-        if (this.unsavedInput) {
-          return false;
-        }
+      if (children.length) {
+        discount = children.reduce((value, current) => value + current);
+      }
 
-        let complement = '';
-
-        if (attribute === 'tags') {
-          complement = `-${subIndex}`;
-
-          this.tagInput = block.payments[paymentIndex].tags[subIndex];
-        }
-
-        block.payments[paymentIndex].isEditing = attribute + complement;
-
-        this.$nextTick(() => {
-          this.$refs[`${block.month}-${block.year}-${paymentIndex}-${attribute}${complement}`][0].focus();
-        });
-      },
-
-      calculateFinalValue(payment) {
-        const children = payment.children ? payment.children.map(payment => payment.value) : [];
-
-        let discount = 0;
-
-        if (children.length) {
-          discount = children.reduce((value, current) => value + current);
-        }
-
-        return Number((payment.value - discount).toFixed(2));
-      },
-
-      upperCaseFirstLetter(text) {
-        return text.slice(0, 1).toUpperCase() + text.slice(1);
-      },
+      return Number((payment.value - discount).toFixed(2));
     },
-  }
+
+    upperCaseFirstLetter(text) {
+      return text.slice(0, 1).toUpperCase() + text.slice(1);
+    },
+  },
+};
 </script>
