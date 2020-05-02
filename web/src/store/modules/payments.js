@@ -101,6 +101,43 @@ const actions = {
       }
     );
   },
+
+  updatePayment({ commit }, payment) {
+    const body = {
+      id: payment.id,
+      payment: payment.payment,
+    };
+
+    commit("updatePayment", {
+      id: body.id,
+      payment: {
+        status: "uploading",
+        error: "",
+      },
+    });
+
+    api.updatePayment(
+      body,
+      (payment) => {
+        commit("updatePayment", {
+          id: body.id,
+          payment: {
+            ...payment,
+            status: "uploaded",
+          },
+        });
+      },
+      (error) => {
+        commit("updatePayment", {
+          id: body.id,
+          payment: {
+            status: "error",
+            error: error.message,
+          },
+        });
+      }
+    );
+  },
 };
 
 const mutations = {

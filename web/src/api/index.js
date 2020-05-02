@@ -70,7 +70,19 @@ export default {
         cb();
       } else {
         error({
-          message: "It was not possibl to remove this payment",
+          message: "It was not possible to remove this payment",
+        });
+      }
+    }, 1000);
+  },
+
+  updatePayment(payment, cb, error) {
+    setTimeout(() => {
+      if (Math.random() > 0.5) {
+        cb(payment.payment);
+      } else {
+        error({
+          message: "It was not possible to update this payment",
         });
       }
     }, 1000);

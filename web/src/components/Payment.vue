@@ -61,9 +61,13 @@
               <b-icon icon="three-dots-vertical" variant="secondary"></b-icon>
             </template>
 
-            <b-dropdown-item @click="removePayment(payment)" href="#" size="sm"
-              >Remove</b-dropdown-item
-            >
+            <b-dropdown-item @click="removePayment(payment)" href="#" size="sm">
+              Remove
+            </b-dropdown-item>
+
+            <b-dropdown-item @click="toggleSuspendPayment(payment)" href="#">
+              {{ payment.suspended ? "Unsuspend" : "Suspend" }}
+            </b-dropdown-item>
           </b-dropdown>
         </b-col>
       </b-row>
@@ -93,10 +97,13 @@ export default {
   methods: {
     ...mapActions("payments", ["removePayment"]),
 
-    endEdit(payment) {
-      payment.isEditing = false;
-
-      this.formatAndSave();
+    toggleSuspendPayment(payment) {
+      this.$store.dispatch("payments/updatePayment", {
+        id: payment.id,
+        payment: {
+          suspended: !payment.suspended,
+        },
+      });
     },
 
     edit(block, paymentIndex, attribute, subIndex) {
