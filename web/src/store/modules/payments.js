@@ -23,6 +23,19 @@ const actions = {
     });
   },
 
+  setAllPayments({ commit }, payments) {
+    commit(
+      "setPayments",
+      payments.map((payment) => ({
+        ...payment,
+        id: uuidv4(),
+        offline: true,
+        status: "uploaded",
+        error: "",
+      }))
+    );
+  },
+
   addPayment({ commit }, data) {
     const body = {
       ...data,

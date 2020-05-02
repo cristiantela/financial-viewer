@@ -66,6 +66,7 @@ export default {
         description: this.description,
         tags: this.tags,
         date: this.date,
+        suspended: false,
       };
 
       this.$store.dispatch("payments/addPayment", data);

@@ -210,8 +210,6 @@ export default {
           if (rules.date.test(text)) {
             let matches = text.match(rules.date);
 
-            console.log(matches);
-
             date = matches[1];
 
             text = text.slice(matches[0].length);
