@@ -4,24 +4,6 @@
 
     <b-row>
       <b-col>
-        Input
-
-        <b-form-textarea
-          v-model="input"
-          rows="10"
-          class="mb-1"
-          size="sm"
-        ></b-form-textarea>
-
-        <b-button @click="save" class="mr-1" size="sm" variant="primary">
-          Save Local
-          <span v-if="unsavedInput">*</span>
-        </b-button>
-
-        <b-button @click="copy" class="mr-1" size="sm" variant="primary">
-          Copy
-        </b-button>
-
         <b-button @click="download" class="mr-1" size="sm" variant="primary">
           Download
         </b-button>
@@ -92,7 +74,6 @@
                       month: block.month,
                     })
                   "
-                  :disabled="unsavedInput"
                   size="sm"
                   variant="primary"
                 >
@@ -127,8 +108,6 @@ export default {
 
   data() {
     return {
-      savedInput: "",
-      input: "",
       data: [],
       tagInput: "",
       month: "",
@@ -138,7 +117,6 @@ export default {
 
   created() {
     this.$store.dispatch("payments/getAllPayments");
-    this.getSavedInput();
   },
 
   methods: {
@@ -162,42 +140,12 @@ export default {
       return array.reduce((value, current) => value + current);
     },
 
-    getSavedInput() {
-      let financialViewerContent = localStorage.getItem("financial-viewer");
-
-      if (financialViewerContent === null) {
-        this.savedInput = `
-03/2020
-1000 salary
--70 payed on 11 dentist plan #health
--50 bus credit #transport #bus
-
-04/2020
-1000 salary
-                            `;
-      } else {
-        this.savedInput = financialViewerContent;
-      }
-
-      this.input = this.savedInput;
-    },
-
-    save() {
-      localStorage.setItem("financial-viewer", this.input);
-      this.savedInput = this.input;
-    },
-
-    copy() {
-      const textarea = document.createElement("textarea");
-      textarea.value = this.input;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    },
-
     download() {
-      const blob = new Blob([this.input]);
+      const output = this.convertGroupPaymentsToText(
+        this.groupPaymentsByMonths
+      );
+
+      const blob = new Blob([output]);
       const a = document.createElement("a");
       a.setAttribute("href", URL.createObjectURL(blob));
       a.setAttribute("download", "financial planner.txt");
@@ -219,13 +167,88 @@ export default {
       const file = files[0];
 
       reader.addEventListener("load", () => {
-        this.input = reader.result;
-        this.save();
+        this.$store.dispatch(
+          "payments/setAllPayments",
+          this.textToJson(reader.result)
+        );
       });
 
       reader.readAsText(file);
 
       event.srcElement.value = "";
+    },
+
+    textToJson(text) {
+      const payments = [];
+
+      let currentBlock = null;
+
+      text.split("\n").forEach((line) => {
+        const rules = {
+          blockStart: /^(\d{2})\/(\d{4})$/,
+          payment: /^( {2})?(--)?(-?[\d.]+) /,
+          date: /^on ((\d{4}-\d{2}-)?\d{2}) ?/,
+          tags: /#([^#]+)/,
+        };
+
+        if (rules.blockStart.test(line)) {
+          const infos = line.match(rules.blockStart);
+
+          currentBlock = {
+            month: infos[1],
+            year: infos[2],
+          };
+        } else if (rules.payment.test(line)) {
+          const infos = line.match(rules.payment);
+
+          let text = line.slice(infos[0].length);
+
+          let date = "",
+            tags = [],
+            suspended = infos[2] === "--";
+
+          if (rules.date.test(text)) {
+            let matches = text.match(rules.date);
+
+            console.log(matches);
+
+            date = matches[1];
+
+            text = text.slice(matches[0].length);
+          }
+
+          while (rules.tags.test(text)) {
+            let matches = text.match(rules.tags);
+
+            text =
+              text.slice(0, matches.index) +
+              text.slice(matches.index + matches[0].length);
+
+            tags.push(matches[1].trim());
+          }
+
+          const payment = {
+            value: Number(infos[3]),
+            description: text.trim(),
+            date: date,
+            tags: tags,
+            suspended,
+          };
+
+          if (infos[1] === "  ") {
+            // currentBlock.payments[
+            //   currentBlock.payments.length - 1
+            // ].children.push(payment);
+          } else {
+            payments.push({
+              ...currentBlock,
+              ...payment,
+            });
+          }
+        }
+      });
+
+      return payments;
     },
 
     addPayment(block) {
@@ -246,35 +269,29 @@ export default {
       });
     },
 
-    formatAndSave() {
-      this.input = this.dataTransformed();
-      this.save();
-    },
-
-    dataTransformed() {
+    convertGroupPaymentsToText(groupPayments) {
       let output = [];
 
-      this.data.forEach((block) => {
-        output.push(`\n${block.month}/${block.year}`);
+      groupPayments.forEach((block) => {
+        output.push(
+          `\n${this.fill(block.month, "0", 2)}/${this.fill(block.year, "0", 4)}`
+        );
 
         block.payments.forEach((payment) => {
           let tags = "";
           let pre = [];
+          let suspended = payment.suspended ? "--" : "";
 
           if (payment.tags.length !== 0) {
             tags = ` #${payment.tags.join(" #")}`;
           }
 
-          if (payment.payedOn) {
-            pre.push(` payed on ${payment.payedOn}`);
-          }
-
-          if (payment.receivedOn) {
-            pre.push(` received on ${payment.receivedOn}`);
+          if (payment.date) {
+            pre.push(` on ${payment.date}`);
           }
 
           output.push(
-            `${String(payment.value)}${pre.join("")} ${
+            `${suspended}${String(payment.value)}${pre.join("")} ${
               payment.description
             }${tags}`
           );
@@ -285,10 +302,6 @@ export default {
     },
 
     addMonth() {
-      if (this.unsavedInput) {
-        return false;
-      }
-
       let month = this.fill(this.month, "0", 2);
       let year = this.fill(this.year, "0", 4);
 
@@ -297,18 +310,12 @@ export default {
         year,
         payments: [],
       });
-
-      this.formatAndSave();
     },
 
     fill(text, fill, length) {
       let output = String(text).substring(0, length);
 
-      for (let i = output.length; i < length; i++) {
-        output = `${fill}${output}`;
-      }
-
-      return output;
+      return fill.repeat(length - output.length) + output;
     },
 
     notSuspendedPayments(payments) {
@@ -347,110 +354,34 @@ export default {
     },
 
     groupPaymentsByMonths() {
-      return this.months.map(({ year, month }) => {
-        return {
-          year,
-          month,
-          payments: this.payments.filter(
-            (payment) => payment.year === year && payment.month === month
-          ),
-        };
-      });
+      return this.months
+        .map(({ year, month }) => {
+          return {
+            year,
+            month,
+            payments: this.payments.filter(
+              (payment) => payment.year === year && payment.month === month
+            ),
+          };
+        })
+        .slice(0)
+        .sort((month1, month2) => {
+          const group1 = `${month1.year}${month1.month}`;
+          const group2 = `${month2.year}${month2.month}`;
+
+          if (group1 > group2) {
+            return -1;
+          } else if (group1 < group2) {
+            return 1;
+          }
+        });
     },
 
     dataReverse() {
       return this.data.slice(0).reverse();
     },
-
-    unsavedInput() {
-      return this.savedInput !== this.input;
-    },
   },
 
-  watch: {
-    input: {
-      handler(input) {
-        this.data = [];
-
-        let currentBlock = null;
-
-        input.split("\n").forEach((line) => {
-          const rules = {
-            blockStart: /^(\d{2})\/(\d{4})$/,
-            payment: /^( {2})?(--)?(-?[\d.]+) /,
-            actionOn: /^(payed|received) on (\d{2}) ?/,
-            tags: /#([^#]+)/,
-          };
-
-          if (rules.blockStart.test(line)) {
-            const infos = line.match(rules.blockStart);
-
-            currentBlock = {
-              month: infos[1],
-              year: infos[2],
-              payments: [],
-            };
-
-            this.data.push(currentBlock);
-          } else if (rules.payment.test(line)) {
-            const infos = line.match(rules.payment);
-
-            let text = line.slice(infos[0].length);
-
-            let payedOn = "",
-              receivedOn = "",
-              tags = [],
-              suspended = infos[2] === "--";
-
-            while (rules.actionOn.test(text)) {
-              let matches = text.match(rules.actionOn);
-              let action = matches[1];
-
-              if (action === "payed") {
-                payedOn = matches[2];
-              } else if (action === "received") {
-                receivedOn = matches[2];
-              }
-
-              text = text.slice(matches[0].length);
-            }
-
-            while (rules.tags.test(text)) {
-              let matches = text.match(rules.tags);
-
-              text =
-                text.slice(0, matches.index) +
-                text.slice(matches.index + matches[0].length);
-
-              tags.push(matches[1].trim());
-            }
-
-            const payment = {
-              value: Number(infos[3]),
-              description: text.trim(),
-              payedOn: payedOn,
-              receivedOn: receivedOn,
-              tags: tags,
-              suspended,
-            };
-
-            if (infos[1] === "  ") {
-              currentBlock.payments[
-                currentBlock.payments.length - 1
-              ].children.push(payment);
-            } else {
-              currentBlock.payments.push({
-                ...payment,
-                children: [],
-                isEditing: false,
-                isMouseOver: false,
-              });
-            }
-          }
-        });
-      },
-      immediate: true,
-    },
-  },
+  watch: {},
 };
 </script>
