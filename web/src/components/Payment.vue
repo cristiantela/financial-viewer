@@ -61,8 +61,12 @@
               <b-icon icon="three-dots-vertical" variant="secondary"></b-icon>
             </template>
 
-            <b-dropdown-item @click="removePayment(payment)" href="#" size="sm">
+            <b-dropdown-item @click="removePayment(payment)" href="#">
               Remove
+            </b-dropdown-item>
+
+            <b-dropdown-item @click="openEditPaymentModal(payment)" href="#">
+              Edit
             </b-dropdown-item>
 
             <b-dropdown-item @click="toggleSuspendPayment(payment)" href="#">
@@ -106,26 +110,8 @@ export default {
       });
     },
 
-    edit(block, paymentIndex, attribute, subIndex) {
-      if (this.unsavedInput) {
-        return false;
-      }
-
-      let complement = "";
-
-      if (attribute === "tags") {
-        complement = `-${subIndex}`;
-
-        this.tagInput = block.payments[paymentIndex].tags[subIndex];
-      }
-
-      block.payments[paymentIndex].isEditing = attribute + complement;
-
-      this.$nextTick(() => {
-        this.$refs[
-          `${block.month}-${block.year}-${paymentIndex}-${attribute}${complement}`
-        ][0].focus();
-      });
+    openEditPaymentModal(payment) {
+      this.$emit("openEditPaymentModal", payment);
     },
 
     calculateFinalValue(payment) {

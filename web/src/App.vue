@@ -1,6 +1,6 @@
 <template>
   <b-container>
-    <add-payment-modal ref="addPaymentModal"></add-payment-modal>
+    <form-payment-modal ref="formPaymentModal"></form-payment-modal>
 
     <b-row>
       <b-col>
@@ -55,6 +55,7 @@
               v-for="payment in block.payments"
               :key="payment.id"
               :payment="payment"
+              @openEditPaymentModal="openEditPaymentModal"
             ></payment>
 
             <payment
@@ -93,7 +94,7 @@
 </template>
 
 <script>
-import AddPaymentModal from "./components/AddPaymentModal.vue";
+import FormPaymentModal from "./components/FormPaymentModal.vue";
 import Payment from "./components/Payment.vue";
 import TagsPercentage from "./components/TagsPercentage.vue";
 import { mapState } from "vuex";
@@ -101,7 +102,7 @@ import { mapState } from "vuex";
 export default {
   name: "App",
   components: {
-    AddPaymentModal,
+    FormPaymentModal,
     Payment,
     TagsPercentage,
   },
@@ -121,7 +122,17 @@ export default {
 
   methods: {
     openAddPaymentModal(data) {
-      this.$refs["addPaymentModal"].show(data);
+      this.$refs["formPaymentModal"].show({
+        type: "add",
+        data,
+      });
+    },
+
+    openEditPaymentModal(payment) {
+      this.$refs["formPaymentModal"].show({
+        type: "edit",
+        data: payment,
+      });
     },
 
     monthName(month) {
@@ -247,24 +258,6 @@ export default {
       });
 
       return payments;
-    },
-
-    addPayment(block) {
-      block.payments.push({
-        value: 0,
-        description: "",
-        payedOn: "",
-        receivedOn: "",
-        tags: [],
-        suspended: false,
-        children: [],
-        isEditing: "description",
-        isMouseOver: false,
-      });
-
-      this.$nextTick(() => {
-        this.edit(block, block.payments.length - 1, "description");
-      });
     },
 
     convertGroupPaymentsToText(groupPayments) {

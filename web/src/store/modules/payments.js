@@ -102,6 +102,48 @@ const actions = {
     );
   },
 
+  editPayment({ commit }, data) {
+    const body = {
+      id: data.id,
+      value: data.value,
+      description: data.description,
+      tags: data.tags,
+      date: data.date,
+    };
+
+    commit("updatePayment", {
+      id: body.id,
+      payment: {
+        value: body.value,
+        description: body.description,
+        tags: body.tags,
+        date: body.date,
+        status: "uploading",
+      },
+    });
+
+    api.updatePayment(
+      body,
+      () => {
+        commit("updatePayment", {
+          id: body.id,
+          payment: {
+            status: "uploaded",
+          },
+        });
+      },
+      (error) => {
+        commit("updatePayment", {
+          id: body.id,
+          payment: {
+            status: "error",
+            error: error.message,
+          },
+        });
+      }
+    );
+  },
+
   updatePayment({ commit }, payment) {
     const body = {
       id: payment.id,
