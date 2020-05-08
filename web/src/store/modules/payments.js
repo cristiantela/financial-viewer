@@ -180,6 +180,20 @@ const actions = {
       }
     );
   },
+
+  addMonth(store, data) {
+    const body = {
+      year: data.year,
+      month: data.month,
+      value: 0,
+      description: "NONE",
+      tags: [],
+      date: "",
+      suspended: false,
+    };
+
+    this.dispatch("payments/addPayment", body);
+  },
 };
 
 const mutations = {

@@ -2,6 +2,8 @@
   <b-container>
     <form-payment-modal ref="formPaymentModal"></form-payment-modal>
 
+    <add-month-modal ref="addMonthModal"></add-month-modal>
+
     <b-row>
       <b-col>
         <b-button @click="download" class="mr-1" size="sm" variant="primary">
@@ -22,20 +24,10 @@
     </b-row>
 
     <b-row class="justify-content-center align-items-end">
-      <b-col cols="3">
-        Month
-        <b-form-input size="sm" v-model="month" type="text" />
-      </b-col>
-
-      <b-col cols="3">
-        Year
-        <b-form-input size="sm" v-model="year" type="text" />
-      </b-col>
-
       <b-col cols="auto" class="text-center">
-        <b-button size="sm" @click="addMonth" variant="primary"
-          >Add Month</b-button
-        >
+        <b-button size="sm" @click="openAddMonthModal" variant="primary">
+          Add Month
+        </b-button>
       </b-col>
     </b-row>
 
@@ -95,6 +87,7 @@
 
 <script>
 import FormPaymentModal from "./components/FormPaymentModal.vue";
+import addMonthModal from "./components/AddMonthModal.vue";
 import Payment from "./components/Payment.vue";
 import TagsPercentage from "./components/TagsPercentage.vue";
 import { mapState } from "vuex";
@@ -103,6 +96,7 @@ export default {
   name: "App",
   components: {
     FormPaymentModal,
+    addMonthModal,
     Payment,
     TagsPercentage,
   },
@@ -110,9 +104,6 @@ export default {
   data() {
     return {
       data: [],
-      tagInput: "",
-      month: "",
-      year: "",
     };
   },
 
@@ -136,7 +127,7 @@ export default {
     },
 
     monthName(month) {
-      return "January,February,March,April,May,June,July,August,September,November,December".split(
+      return "January,February,March,April,May,June,July,August,September,October,November,December".split(
         ","
       )[month - 1];
     },
@@ -244,11 +235,7 @@ export default {
             suspended,
           };
 
-          if (infos[1] === "  ") {
-            // currentBlock.payments[
-            //   currentBlock.payments.length - 1
-            // ].children.push(payment);
-          } else {
+          if (infos[1] !== "  ") {
             payments.push({
               ...currentBlock,
               ...payment,
@@ -292,15 +279,8 @@ export default {
       return output.join("\n").trim();
     },
 
-    addMonth() {
-      let month = this.fill(this.month, "0", 2);
-      let year = this.fill(this.year, "0", 4);
-
-      this.data.push({
-        month,
-        year,
-        payments: [],
-      });
+    openAddMonthModal() {
+      this.$refs.addMonthModal.show();
     },
 
     fill(text, fill, length) {
