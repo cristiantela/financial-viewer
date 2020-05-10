@@ -3,22 +3,26 @@
     <form-payment-modal ref="formPaymentModal"></form-payment-modal>
     <add-month-modal ref="addMonthModal"></add-month-modal>
 
-    Saving type:
+    <b-row>
+      <b-col>
+        Saving type:
 
-    <b-form-group>
-      <b-form-radio v-model="saveType" value="local">
-        Local
-      </b-form-radio>
+        <b-form-group>
+          <b-form-radio v-model="saveType" value="local">
+            Local
+          </b-form-radio>
 
-      <b-form-radio
-        v-model="saveType"
-        value="online"
-        disabled
-        v-b-popover.hover.left="'The API is being built'"
-      >
-        Online
-      </b-form-radio>
-    </b-form-group>
+          <b-form-radio
+            v-model="saveType"
+            value="online"
+            disabled
+            v-b-popover.hover.left="'The API is being built'"
+          >
+            Online
+          </b-form-radio>
+        </b-form-group>
+      </b-col>
+    </b-row>
 
     <b-row>
       <b-col>
@@ -64,12 +68,11 @@
       </b-col>
     </b-row>
 
-    <b-row>
-      <div
-        v-for="block in groupPaymentsByMonths"
-        :key="`${block.year}-${block.month}`"
-        class="w-100"
-      >
+    <b-row
+      v-for="block in groupPaymentsByMonths"
+      :key="`${block.year}-${block.month}`"
+    >
+      <b-col>
         <div class="text-center">
           <h1>{{ monthName(block.month) }}/{{ block.year }}</h1>
         </div>
@@ -113,7 +116,7 @@
             <tags-percentage :payments="block.payments"></tags-percentage>
           </b-col>
         </b-row>
-      </div>
+      </b-col>
     </b-row>
   </b-container>
 </template>
