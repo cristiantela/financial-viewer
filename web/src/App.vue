@@ -3,61 +3,56 @@
     <form-payment-modal ref="formPaymentModal"></form-payment-modal>
     <add-month-modal ref="addMonthModal"></add-month-modal>
 
-    <b-row>
+    <b-row align-h="between" align-v="end" class="mb-2">
       <b-col>
         Saving type:
 
-        <b-form-group>
-          <b-form-radio v-model="saveType" value="local">
-            Local
-          </b-form-radio>
-
-          <b-form-radio
+        <b-form-group class="mb-0">
+          <b-form-select
             v-model="saveType"
-            value="online"
-            disabled
-            v-b-popover.hover.left="'The API is being built'"
+            :style="{
+              width: '150px',
+            }"
+            class="mr-1"
           >
-            Online
-          </b-form-radio>
+            <b-form-select-option value="local">Local</b-form-select-option>
+            <b-form-select-option value="online" disabled>
+              Online (The API is being built)
+            </b-form-select-option>
+          </b-form-select>
+
+          <b-button
+            v-if="saveType === 'local'"
+            @click="saveLocal"
+            class="mr-1"
+            variant="primary"
+          >
+            Save Local
+
+            <span
+              v-if="
+                savedInput !== convertGroupPaymentsToText(groupPaymentsByMonths)
+              "
+              >(Not saved)</span
+            >
+          </b-button>
         </b-form-group>
+      </b-col>
+
+      <b-col cols="auto">
+        <b-dropdown right text="Actions" variant="primary">
+          <b-dropdown-item href="#" @click="download">Download</b-dropdown-item>
+          <b-dropdown-item href="#" @click="openFileSelector"
+            >Import</b-dropdown-item
+          >
+        </b-dropdown>
+
+        <input @change="importFile" ref="file" type="file" class="d-none" />
       </b-col>
     </b-row>
 
     <b-row>
-      <b-col>
-        <b-button @click="download" class="mr-1" size="sm" variant="primary">
-          Download
-        </b-button>
-
-        <b-button
-          @click="openFileSelector"
-          class="mr-1"
-          size="sm"
-          variant="primary"
-        >
-          Import
-        </b-button>
-
-        <input @change="importFile" ref="file" type="file" class="d-none" />
-
-        <b-button
-          v-if="saveType === 'local'"
-          @click="saveLocal"
-          class="mr-1"
-          size="sm"
-          variant="primary"
-        >
-          Save Local
-
-          <span
-            v-if="
-              savedInput !== convertGroupPaymentsToText(groupPaymentsByMonths)
-            "
-            >(Not saved)</span
-          >
-        </b-button>
-      </b-col>
+      <b-col> </b-col>
     </b-row>
 
     <b-row class="justify-content-center align-items-end">
