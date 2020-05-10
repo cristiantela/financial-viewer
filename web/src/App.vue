@@ -1,8 +1,24 @@
 <template>
   <b-container>
     <form-payment-modal ref="formPaymentModal"></form-payment-modal>
-
     <add-month-modal ref="addMonthModal"></add-month-modal>
+
+    Saving type:
+
+    <b-form-group>
+      <b-form-radio v-model="saveType" value="local">
+        Local
+      </b-form-radio>
+
+      <b-form-radio
+        v-model="saveType"
+        value="online"
+        disabled
+        v-b-popover.hover.left="'The API is being built'"
+      >
+        Online
+      </b-form-radio>
+    </b-form-group>
 
     <b-row>
       <b-col>
@@ -20,6 +36,23 @@
         </b-button>
 
         <input @change="importFile" ref="file" type="file" class="d-none" />
+
+        <b-button
+          v-if="saveType === 'local'"
+          @click="saveLocal"
+          class="mr-1"
+          size="sm"
+          variant="primary"
+        >
+          Save Local
+
+          <span
+            v-if="
+              savedInput !== convertGroupPaymentsToText(groupPaymentsByMonths)
+            "
+            >(Not saved)</span
+          >
+        </b-button>
       </b-col>
     </b-row>
 
@@ -104,11 +137,21 @@ export default {
   data() {
     return {
       data: [],
+      saveType: localStorage.getItem("fv-save-type")
+        ? localStorage.getItem("fv-save-type")
+        : "local",
+      savedInput: "",
     };
   },
 
   created() {
-    this.$store.dispatch("payments/getAllPayments");
+    if (this.saveType === "local" && localStorage.getItem("fv-input")) {
+      this.savedInput = localStorage.getItem("fv-input");
+
+      this.setPaymentsByText(this.savedInput);
+    } else {
+      this.$store.dispatch("payments/getAllPayments");
+    }
   },
 
   methods: {
@@ -169,10 +212,7 @@ export default {
       const file = files[0];
 
       reader.addEventListener("load", () => {
-        this.$store.dispatch(
-          "payments/setAllPayments",
-          this.textToJson(reader.result)
-        );
+        this.setPaymentsByText(reader.result);
       });
 
       reader.readAsText(file);
@@ -300,6 +340,18 @@ export default {
         )
       );
     },
+
+    saveLocal() {
+      this.savedInput = this.convertGroupPaymentsToText(
+        this.groupPaymentsByMonths
+      );
+
+      localStorage.setItem("fv-input", this.savedInput);
+    },
+
+    setPaymentsByText(text) {
+      this.$store.dispatch("payments/setAllPayments", this.textToJson(text));
+    },
   },
 
   computed: {
@@ -353,6 +405,10 @@ export default {
     },
   },
 
-  watch: {},
+  watch: {
+    saveType(value) {
+      localStorage.setItem("fv-save-type", value);
+    },
+  },
 };
 </script>
