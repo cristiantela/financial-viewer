@@ -46,45 +46,27 @@ export default {
     setTimeout(() => cb(_payments), 100);
   },
 
-  addPayment(payment, cb, error) {
+  addPayment(payment, cb) {
     payment;
 
     setTimeout(() => {
-      if (Math.random() > 0.2) {
-        cb({
-          id: Math.floor(Math.random() * 1000),
-        });
-      } else {
-        error({
-          message: "It was not possible to add this payment",
-        });
-      }
+      cb({
+        id: Math.floor(Math.random() * 1000),
+      });
     }, 1000);
   },
 
-  removePayment(payment, cb, error) {
+  removePayment(payment, cb) {
     payment;
 
     setTimeout(() => {
-      if (Math.random() > 0.5) {
-        cb();
-      } else {
-        error({
-          message: "It was not possible to remove this payment",
-        });
-      }
+      cb();
     }, 1000);
   },
 
-  updatePayment(payment, cb, error) {
+  updatePayment(payment, cb) {
     setTimeout(() => {
-      if (Math.random() > 0.5) {
-        cb(payment.payment);
-      } else {
-        error({
-          message: "It was not possible to update this payment",
-        });
-      }
+      cb(payment.payment);
     }, 1000);
   },
 };
