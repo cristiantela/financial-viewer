@@ -1,119 +1,127 @@
 <template>
-  <b-container>
-    <form-payment-modal ref="formPaymentModal"></form-payment-modal>
-    <add-month-modal ref="addMonthModal"></add-month-modal>
+  <div>
+    <b-container class="py-4">
+      <form-payment-modal ref="formPaymentModal"></form-payment-modal>
+      <add-month-modal ref="addMonthModal"></add-month-modal>
 
-    <b-row align-h="between" align-v="end" class="mb-2">
-      <b-col>
-        Saving type:
+      <b-row align-h="between" align-v="end" class="mb-2">
+        <b-col>
+          Saving type:
 
-        <b-form-group class="mb-0">
-          <b-form-select
-            v-model="saveType"
-            :style="{
-              width: '150px',
-            }"
-            class="mr-1"
-          >
-            <b-form-select-option value="local">Local</b-form-select-option>
-            <b-form-select-option value="online" disabled>
-              Online (The API is being built)
-            </b-form-select-option>
-          </b-form-select>
-
-          <b-button
-            v-if="saveType === 'local'"
-            @click="saveLocal"
-            class="mr-1"
-            variant="primary"
-          >
-            Save Local
-
-            <span
-              v-if="
-                savedInput !== convertGroupPaymentsToText(groupPaymentsByMonths)
-              "
-              >(Not saved)</span
-            >
-          </b-button>
-        </b-form-group>
-      </b-col>
-
-      <b-col cols="auto">
-        <b-dropdown right text="Actions" variant="primary">
-          <b-dropdown-item href="#" @click="download">Download</b-dropdown-item>
-          <b-dropdown-item href="#" @click="openFileSelector"
-            >Import</b-dropdown-item
-          >
-        </b-dropdown>
-
-        <input @change="importFile" ref="file" type="file" class="d-none" />
-      </b-col>
-    </b-row>
-
-    <b-row>
-      <b-col> </b-col>
-    </b-row>
-
-    <b-row class="justify-content-center align-items-end">
-      <b-col cols="auto" class="text-center">
-        <b-button size="sm" @click="openAddMonthModal" variant="primary">
-          Add Month
-        </b-button>
-      </b-col>
-    </b-row>
-
-    <b-row
-      v-for="block in groupPaymentsByMonths"
-      :key="`${block.year}-${block.month}`"
-    >
-      <b-col>
-        <div class="text-center">
-          <h1>{{ monthName(block.month) }}/{{ block.year }}</h1>
-        </div>
-
-        <b-row>
-          <b-col cols="12" sm="6">
-            <payment
-              v-for="payment in block.payments"
-              :key="payment.id"
-              :payment="payment"
-              @openEditPaymentModal="openEditPaymentModal"
-            ></payment>
-
-            <payment
-              :payment="{
-                value: sumAllPayments(block.payments).toFixed(2),
-                description: '',
+          <b-form-group class="mb-0">
+            <b-form-select
+              v-model="saveType"
+              :style="{
+                width: '150px',
               }"
-              hide-controls
-            ></payment>
+              class="mr-1"
+            >
+              <b-form-select-option value="local">Local</b-form-select-option>
+              <b-form-select-option value="online" disabled>
+                Online (The API is being built)
+              </b-form-select-option>
+            </b-form-select>
 
-            <b-row>
-              <b-col offset="3">
-                <b-button
-                  @click="
-                    openAddPaymentModal({
-                      year: block.year,
-                      month: block.month,
-                    })
-                  "
-                  size="sm"
-                  variant="primary"
-                >
-                  Add Payment
-                </b-button>
-              </b-col>
-            </b-row>
-          </b-col>
+            <b-button
+              v-if="saveType === 'local'"
+              @click="saveLocal"
+              class="mr-1"
+              variant="primary"
+            >
+              Save Local
 
-          <b-col cols="12" sm="6">
-            <tags-percentage :payments="block.payments"></tags-percentage>
-          </b-col>
-        </b-row>
-      </b-col>
-    </b-row>
-  </b-container>
+              <span
+                v-if="
+                  savedInput !==
+                    convertGroupPaymentsToText(groupPaymentsByMonths)
+                "
+                >(Not saved)</span
+              >
+            </b-button>
+          </b-form-group>
+        </b-col>
+
+        <b-col cols="auto">
+          <b-dropdown right text="Actions" variant="primary">
+            <b-dropdown-item href="#" @click="download">
+              Download
+            </b-dropdown-item>
+
+            <b-dropdown-item href="#" @click="openFileSelector">
+              Import
+            </b-dropdown-item>
+          </b-dropdown>
+
+          <input @change="importFile" ref="file" type="file" class="d-none" />
+        </b-col>
+      </b-row>
+
+      <b-row>
+        <b-col> </b-col>
+      </b-row>
+
+      <b-row class="justify-content-center align-items-end">
+        <b-col cols="auto" class="text-center">
+          <b-button size="sm" @click="openAddMonthModal" variant="primary">
+            Add Month
+          </b-button>
+        </b-col>
+      </b-row>
+
+      <b-row
+        v-for="block in groupPaymentsByMonths"
+        :key="`${block.year}-${block.month}`"
+      >
+        <b-col>
+          <div class="text-center">
+            <h1>{{ monthName(block.month) }}/{{ block.year }}</h1>
+          </div>
+
+          <b-row>
+            <b-col cols="12" sm="6">
+              <payment
+                v-for="payment in block.payments"
+                :key="payment.id"
+                :payment="payment"
+                @openEditPaymentModal="openEditPaymentModal"
+              ></payment>
+
+              <payment
+                :payment="{
+                  value: sumAllPayments(block.payments).toFixed(2),
+                  description: '',
+                }"
+                hide-controls
+              ></payment>
+
+              <b-row>
+                <b-col offset="3">
+                  <b-button
+                    @click="
+                      openAddPaymentModal({
+                        year: block.year,
+                        month: block.month,
+                      })
+                    "
+                    size="sm"
+                    variant="primary"
+                  >
+                    Add Payment
+                  </b-button>
+                </b-col>
+              </b-row>
+            </b-col>
+
+            <b-col cols="12" sm="6">
+              <tags-percentage :payments="block.payments"></tags-percentage>
+            </b-col>
+          </b-row>
+        </b-col>
+      </b-row>
+    </b-container>
+
+    <Footer></Footer>
+  </div>
 </template>
 
 <script>
@@ -121,6 +129,7 @@ import FormPaymentModal from "./components/FormPaymentModal.vue";
 import addMonthModal from "./components/AddMonthModal.vue";
 import Payment from "./components/Payment.vue";
 import TagsPercentage from "./components/TagsPercentage.vue";
+import Footer from "./components/Footer.vue";
 import { mapState } from "vuex";
 
 export default {
@@ -130,6 +139,7 @@ export default {
     addMonthModal,
     Payment,
     TagsPercentage,
+    Footer,
   },
 
   data() {
