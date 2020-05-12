@@ -1,5 +1,15 @@
 <template>
   <div>
+    <b-navbar variant="dark" type="dark" :sticky="true">
+      <b-navbar-nav>
+        <b-nav-item>
+          <span v-if="currentBlock">
+            {{ monthName(currentBlock.month) }}/{{ currentBlock.year }}
+          </span>
+        </b-nav-item>
+      </b-navbar-nav>
+    </b-navbar>
+
     <b-container class="py-4">
       <form-payment-modal ref="formPaymentModal"></form-payment-modal>
       <add-month-modal ref="addMonthModal"></add-month-modal>
@@ -71,6 +81,7 @@
       <b-row
         v-for="block in groupPaymentsByMonths"
         :key="`${block.year}-${block.month}`"
+        :ref="format(block)"
       >
         <b-col>
           <div class="text-center">
@@ -134,6 +145,7 @@ import { mapState } from "vuex";
 
 export default {
   name: "App",
+
   components: {
     FormPaymentModal,
     addMonthModal,
@@ -149,6 +161,7 @@ export default {
         ? localStorage.getItem("fv-save-type")
         : "local",
       savedInput: "",
+      scrollY: 0,
     };
   },
 
@@ -160,9 +173,43 @@ export default {
     } else {
       this.$store.dispatch("payments/getAllPayments");
     }
+
+    window.addEventListener("scroll", () => {
+      this.scrollY = window.scrollY;
+    });
   },
 
   methods: {
+    offsetTopBlock(block) {
+      const element = this.$refs[this.format(block)];
+
+      if (!element || !element.length) {
+        return 0;
+      }
+
+      console.log(this.offsetTop(element[0]));
+
+      return this.offsetTop(element[0]);
+    },
+
+    offsetTop(element) {
+      let top = 0;
+
+      while (element !== null) {
+        top += element.offsetTop;
+        element = element.offsetParent;
+      }
+
+      return top;
+    },
+
+    format(block) {
+      const month = this.fill(block.month, "0", 2);
+      const year = this.fill(block.year, "0", 4);
+
+      return `month-${month}${year}`;
+    },
+
     openAddPaymentModal(data) {
       this.$refs["formPaymentModal"].show({
         type: "add",
@@ -366,6 +413,24 @@ export default {
     ...mapState({
       payments: (state) => state.payments.all,
     }),
+
+    currentBlock() {
+      let current = {
+        block: null,
+        maxTop: 0,
+      };
+
+      this.months.forEach((block) => {
+        const top = this.offsetTopBlock(block);
+
+        if (this.scrollY >= top && top > current.maxTop) {
+          current.block = block;
+          current.maxTop = top;
+        }
+      });
+
+      return current.block;
+    },
 
     months() {
       const months = this.payments.map((payment) => ({
