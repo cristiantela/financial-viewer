@@ -187,8 +187,6 @@ export default {
         return 0;
       }
 
-      console.log(this.offsetTop(element[0]));
-
       return this.offsetTop(element[0]);
     },
 
