@@ -1,10 +1,22 @@
 <template>
   <div>
     <b-navbar variant="dark" type="dark" :sticky="true">
-      <b-navbar-nav>
+      <b-navbar-nav class="m-auto">
         <b-nav-item>
           <span v-if="currentBlock">
-            {{ monthName(currentBlock.month) }}/{{ currentBlock.year }}
+            <b-form-select
+              @change="changeMonth"
+              :value="`${format(currentBlock)}`"
+              class="w-auto"
+            >
+              <b-form-select-option
+                v-for="month in months.slice(0).reverse()"
+                :key="format(month)"
+                :value="format(month)"
+              >
+                {{ monthName(month.month) }}/{{ month.year }}
+              </b-form-select-option>
+            </b-form-select>
           </span>
         </b-nav-item>
       </b-navbar-nav>
@@ -180,8 +192,12 @@ export default {
   },
 
   methods: {
+    changeMonth(value) {
+      window.scrollTo(0, this.offsetTopBlock(value));
+    },
+
     offsetTopBlock(block) {
-      const element = this.$refs[this.format(block)];
+      const element = this.$refs[block];
 
       if (!element || !element.length) {
         return 0;
@@ -419,7 +435,7 @@ export default {
       };
 
       this.months.forEach((block) => {
-        const top = this.offsetTopBlock(block);
+        const top = this.offsetTopBlock(this.format(block));
 
         if (this.scrollY >= top && top > current.maxTop) {
           current.block = block;
