@@ -10,13 +10,17 @@
               class="w-auto"
             >
               <b-form-select-option
-                v-for="month in months.slice(0).reverse()"
+                v-for="month in monthsOrdered"
                 :key="format(month)"
                 :value="format(month)"
               >
                 {{ monthName(month.month) }}/{{ month.year }}
               </b-form-select-option>
             </b-form-select>
+          </span>
+
+          <span v-else>
+            Financial Viewer
           </span>
         </b-nav-item>
       </b-navbar-nav>
@@ -203,7 +207,7 @@ export default {
         return 0;
       }
 
-      return this.offsetTop(element[0]);
+      return this.offsetTop(element[0]) - 70;
     },
 
     offsetTop(element) {
@@ -444,6 +448,24 @@ export default {
       });
 
       return current.block;
+    },
+
+    monthsOrdered() {
+      return this.months.slice(0).sort((block1, block2) => {
+        if (block1.year === block2.year) {
+          if (block1.month === block2.month) {
+            return 0;
+          } else if (block1.month > block2.month) {
+            return -1;
+          } else {
+            return 1;
+          }
+        } else if (block1.year > block2.year) {
+          return -1;
+        } else {
+          return 1;
+        }
+      });
     },
 
     months() {
