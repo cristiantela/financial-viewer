@@ -107,7 +107,7 @@
           <b-row>
             <b-col cols="12" sm="6">
               <payment
-                v-for="payment in block.payments"
+                v-for="payment in removeTheNonePayment(block.payments)"
                 :key="payment.id"
                 :payment="payment"
                 @openEditPaymentModal="openEditPaymentModal"
@@ -424,6 +424,10 @@ export default {
 
     setPaymentsByText(text) {
       this.$store.dispatch("payments/setAllPayments", this.textToJson(text));
+    },
+
+    removeTheNonePayment(payments) {
+      return payments.filter((payment) => payment.description !== "NONE");
     },
   },
 
