@@ -32,7 +32,7 @@
             }"
             :key="index"
           ></div>
-          {{ ((spent(payments) / revenue(payments)) * 100).toFixed(1) }}%
+          {{ usagePercentage.toFixed(1) }}%
         </div>
 
         <b-row>
@@ -97,6 +97,19 @@ export default {
         },
       ],
     };
+  },
+
+  computed: {
+    usagePercentage() {
+      const spent = this.spent(this.payments);
+      const revenue = this.revenue(this.payments);
+
+      if (revenue === 0) {
+        return 0;
+      }
+
+      return (spent / revenue) * 100;
+    },
   },
 
   methods: {
