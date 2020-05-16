@@ -47,12 +47,6 @@
           >
             {{ upperCaseFirstLetter(payment.description) }}
           </span>
-
-          <payment
-            v-for="(subPayment, subPaymentIndex) in payment.children"
-            :key="subPaymentIndex"
-            :payment="subPayment"
-          ></payment>
         </b-col>
 
         <b-col v-if="!hideControls" cols="auto">
@@ -115,17 +109,7 @@ export default {
     },
 
     calculateFinalValue(payment) {
-      const children = payment.children
-        ? payment.children.map((payment) => payment.value)
-        : [];
-
-      let discount = 0;
-
-      if (children.length) {
-        discount = children.reduce((value, current) => value + current);
-      }
-
-      return Number((payment.value - discount).toFixed(2));
+      return Number(Number(payment.value).toFixed(2));
     },
 
     upperCaseFirstLetter(text) {
