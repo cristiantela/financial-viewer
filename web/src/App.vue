@@ -1,8 +1,8 @@
 <template>
   <div>
-    <b-navbar ref="navbar" variant="dark" type="dark" :sticky="true">
+    <div ref="navbar" class="bg-dark sticky-top py-2">
       <b-container>
-        <b-row align-v="center" align-h="between" class="w-100">
+        <b-row align-v="center" align-h="between">
           <b-col cols="auto">
             <b-button
               v-if="saveType === 'local'"
@@ -60,7 +60,7 @@
           </b-col>
         </b-row>
       </b-container>
-    </b-navbar>
+    </div>
 
     <b-container class="py-4">
       <form-payment-modal ref="formPaymentModal"></form-payment-modal>
@@ -208,7 +208,7 @@ export default {
         return 0;
       }
 
-      return this.offsetTop(element[0]) - this.$refs.navbar.$el.offsetHeight;
+      return this.offsetTop(element[0]) - this.$refs.navbar.offsetHeight;
     },
 
     offsetTop(element) {
