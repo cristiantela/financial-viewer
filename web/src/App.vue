@@ -1,29 +1,65 @@
 <template>
   <div>
-    <b-navbar variant="dark" type="dark" :sticky="true">
-      <b-navbar-nav class="m-auto">
-        <b-nav-item>
-          <span v-if="currentBlock">
-            <b-form-select
-              @change="changeMonth"
-              :value="`${format(currentBlock)}`"
-              class="w-auto"
+    <b-navbar ref="navbar" variant="dark" type="dark" :sticky="true">
+      <b-container>
+        <b-row align-v="center" align-h="between" class="w-100">
+          <b-col cols="auto">
+            <b-button
+              v-if="saveType === 'local'"
+              @click="saveLocal"
+              class="mr-1"
+              variant="primary"
             >
-              <b-form-select-option
-                v-for="month in monthsOrdered"
-                :key="format(month)"
-                :value="format(month)"
-              >
-                {{ monthName(month.month) }}/{{ month.year }}
-              </b-form-select-option>
-            </b-form-select>
-          </span>
+              Save Local
 
-          <span v-else>
-            Financial Viewer
-          </span>
-        </b-nav-item>
-      </b-navbar-nav>
+              <span
+                v-if="
+                  savedInput !==
+                    convertGroupPaymentsToText(groupPaymentsByMonths)
+                "
+              >
+                (Not saved)
+              </span>
+            </b-button>
+          </b-col>
+
+          <b-col cols="auto" class="text-white">
+            <span v-if="currentBlock">
+              <b-form-select
+                @change="changeMonth"
+                :value="`${format(currentBlock)}`"
+                class="w-auto"
+              >
+                <b-form-select-option
+                  v-for="month in monthsOrdered"
+                  :key="format(month)"
+                  :value="format(month)"
+                >
+                  {{ monthName(month.month) }}/{{ month.year }}
+                </b-form-select-option>
+              </b-form-select>
+            </span>
+
+            <span v-else>
+              Financial Viewer
+            </span>
+          </b-col>
+
+          <b-col cols="auto">
+            <b-dropdown right text="Actions" variant="primary">
+              <b-dropdown-item href="#" @click="download">
+                Download
+              </b-dropdown-item>
+
+              <b-dropdown-item href="#" @click="openFileSelector">
+                Import
+              </b-dropdown-item>
+            </b-dropdown>
+
+            <input @change="importFile" ref="file" type="file" class="d-none" />
+          </b-col>
+        </b-row>
+      </b-container>
     </b-navbar>
 
     <b-container class="py-4">
@@ -47,43 +83,8 @@
                 Online (The API is being built)
               </b-form-select-option>
             </b-form-select>
-
-            <b-button
-              v-if="saveType === 'local'"
-              @click="saveLocal"
-              class="mr-1"
-              variant="primary"
-            >
-              Save Local
-
-              <span
-                v-if="
-                  savedInput !==
-                    convertGroupPaymentsToText(groupPaymentsByMonths)
-                "
-                >(Not saved)</span
-              >
-            </b-button>
           </b-form-group>
         </b-col>
-
-        <b-col cols="auto">
-          <b-dropdown right text="Actions" variant="primary">
-            <b-dropdown-item href="#" @click="download">
-              Download
-            </b-dropdown-item>
-
-            <b-dropdown-item href="#" @click="openFileSelector">
-              Import
-            </b-dropdown-item>
-          </b-dropdown>
-
-          <input @change="importFile" ref="file" type="file" class="d-none" />
-        </b-col>
-      </b-row>
-
-      <b-row>
-        <b-col> </b-col>
       </b-row>
 
       <b-row class="justify-content-center align-items-end">
@@ -207,7 +208,7 @@ export default {
         return 0;
       }
 
-      return this.offsetTop(element[0]) - 70;
+      return this.offsetTop(element[0]) - this.$refs.navbar.$el.offsetHeight;
     },
 
     offsetTop(element) {
