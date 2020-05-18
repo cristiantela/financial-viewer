@@ -2,8 +2,23 @@
   <div>
     <div ref="navbar" class="bg-dark sticky-top py-2">
       <b-container>
-        <b-row align-v="center" align-h="between">
+        <b-row align-v="center" align-h="between" class="text-white">
           <b-col cols="auto">
+            Saving type:
+
+            <b-form-select
+              v-model="saveType"
+              :style="{
+                width: '150px',
+              }"
+              class="mr-1"
+            >
+              <b-form-select-option value="local">Local</b-form-select-option>
+              <b-form-select-option value="online" disabled>
+                Online (The API is being built)
+              </b-form-select-option>
+            </b-form-select>
+
             <b-button
               v-if="saveType === 'local'"
               @click="saveLocal"
@@ -23,7 +38,7 @@
             </b-button>
           </b-col>
 
-          <b-col cols="auto" class="text-white">
+          <b-col cols="auto">
             <span v-if="currentBlock">
               <b-form-select
                 @change="changeMonth"
@@ -65,27 +80,6 @@
     <b-container class="py-4">
       <form-payment-modal ref="formPaymentModal"></form-payment-modal>
       <add-month-modal ref="addMonthModal"></add-month-modal>
-
-      <b-row align-h="between" align-v="end" class="mb-2">
-        <b-col>
-          Saving type:
-
-          <b-form-group class="mb-0">
-            <b-form-select
-              v-model="saveType"
-              :style="{
-                width: '150px',
-              }"
-              class="mr-1"
-            >
-              <b-form-select-option value="local">Local</b-form-select-option>
-              <b-form-select-option value="online" disabled>
-                Online (The API is being built)
-              </b-form-select-option>
-            </b-form-select>
-          </b-form-group>
-        </b-col>
-      </b-row>
 
       <b-row class="justify-content-center align-items-end">
         <b-col cols="auto" class="text-center">
