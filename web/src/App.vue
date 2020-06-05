@@ -89,6 +89,29 @@
         </b-col>
       </b-row>
 
+      <b-row>
+        <b-col>
+          <h1>Projects</h1>
+        </b-col>
+      </b-row>
+
+      <b-row v-for="project in projects" :key="project.id">
+        <b-col>
+          {{ project.payment.description }}
+
+          <b-row
+            v-for="(month, index) in getProjectPeriod(project)"
+            :key="index"
+          >
+            <b-col>
+              {{ month.month }}/{{ month.year }}
+
+              {{ project.payment.value / getProjectPeriod(project).length }}
+            </b-col>
+          </b-row>
+        </b-col>
+      </b-row>
+
       <b-row
         v-for="block in groupPaymentsByMonths"
         :key="`${block.year}-${block.month}`"
@@ -102,7 +125,7 @@
           <b-row>
             <b-col cols="12" sm="6">
               <payment
-                v-for="payment in removeTheNonePayment(block.payments)"
+                v-for="payment in getAllPayments(block.payments)"
                 :key="payment.id"
                 :payment="payment"
                 @openEditPaymentModal="openEditPaymentModal"
@@ -110,7 +133,9 @@
 
               <payment
                 :payment="{
-                  value: sumAllPayments(block.payments).toFixed(2),
+                  value: sumAllPayments(getAllPayments(block.payments)).toFixed(
+                    2
+                  ),
                   description: '',
                 }"
                 hide-controls
@@ -135,7 +160,9 @@
             </b-col>
 
             <b-col cols="12" sm="6">
-              <tags-percentage :payments="block.payments"></tags-percentage>
+              <tags-percentage
+                :payments="getAllPayments(block.payments)"
+              ></tags-percentage>
             </b-col>
           </b-row>
         </b-col>
@@ -167,12 +194,19 @@ export default {
 
   data() {
     return {
+      projects: [],
       data: [],
       saveType: localStorage.getItem("fv-save-type")
         ? localStorage.getItem("fv-save-type")
         : "local",
       savedInput: "",
       scrollY: 0,
+
+      rules: {
+        payment: /^( {2})?(--)?(-?[\d.]+) /,
+        date: /^on ((\d{4}-\d{2}-)?\d{2}) ?/,
+        tags: /#([^#]+)/,
+      },
     };
   },
 
@@ -191,6 +225,38 @@ export default {
   },
 
   methods: {
+    getProjectPeriod(project) {
+      const periodRule = /(\d{2})\/(\d{4})/;
+
+      let [month, year] = project.from
+        .match(periodRule)
+        .slice(1)
+        .map(Number);
+
+      const [monthEnd, yearEnd] = project.to
+        .match(periodRule)
+        .slice(1)
+        .map(Number);
+
+      const months = [];
+
+      for (; year <= yearEnd && month <= monthEnd; ) {
+        months.push({
+          month,
+          year,
+        });
+
+        month++;
+
+        if (month === 13) {
+          month = 1;
+          year++;
+        }
+      }
+
+      return months;
+    },
+
     changeMonth(value) {
       window.scrollTo(0, this.offsetTopBlock(value));
     },
@@ -296,9 +362,6 @@ export default {
       text.split("\n").forEach((line) => {
         const rules = {
           blockStart: /^(\d{2})\/(\d{4})$/,
-          payment: /^( {2})?(--)?(-?[\d.]+) /,
-          date: /^on ((\d{4}-\d{2}-)?\d{2}) ?/,
-          tags: /#([^#]+)/,
         };
 
         if (rules.blockStart.test(line)) {
@@ -308,51 +371,53 @@ export default {
             month: infos[1],
             year: infos[2],
           };
-        } else if (rules.payment.test(line)) {
-          const infos = line.match(rules.payment);
+        } else if (this.rules.payment.test(line)) {
+          const payment = this.getPaymentFromLine(line);
 
-          let text = line.slice(infos[0].length);
-
-          let date = "",
-            tags = [],
-            suspended = infos[2] === "--";
-
-          if (rules.date.test(text)) {
-            let matches = text.match(rules.date);
-
-            date = matches[1];
-
-            text = text.slice(matches[0].length);
-          }
-
-          while (rules.tags.test(text)) {
-            let matches = text.match(rules.tags);
-
-            text =
-              text.slice(0, matches.index) +
-              text.slice(matches.index + matches[0].length);
-
-            tags.push(matches[1].trim());
-          }
-
-          const payment = {
-            value: Number(infos[3]),
-            description: text.trim(),
-            date: date,
-            tags: tags,
-            suspended,
-          };
-
-          if (infos[1] !== "  ") {
-            payments.push({
-              ...currentBlock,
-              ...payment,
-            });
-          }
+          payments.push({
+            ...currentBlock,
+            ...payment,
+          });
         }
       });
 
       return payments;
+    },
+
+    getPaymentFromLine(line) {
+      const infos = line.match(this.rules.payment);
+
+      let text = line.slice(infos[0].length);
+
+      let date = "",
+        tags = [],
+        suspended = infos[2] === "--";
+
+      if (this.rules.date.test(text)) {
+        let matches = text.match(this.rules.date);
+
+        date = matches[1];
+
+        text = text.slice(matches[0].length);
+      }
+
+      while (this.rules.tags.test(text)) {
+        let matches = text.match(this.rules.tags);
+
+        text =
+          text.slice(0, matches.index) +
+          text.slice(matches.index + matches[0].length);
+
+        tags.push(matches[1].trim());
+      }
+
+      return {
+        value: Number(infos[3]),
+        description: text.trim(),
+        date: date,
+        tags: tags,
+        suspended,
+      };
     },
 
     convertGroupPaymentsToText(groupPayments) {
@@ -364,27 +429,43 @@ export default {
         );
 
         block.payments.forEach((payment) => {
-          let tags = "";
-          let pre = [];
-          let suspended = payment.suspended ? "--" : "";
-
-          if (payment.tags.length !== 0) {
-            tags = ` #${payment.tags.join(" #")}`;
-          }
-
-          if (payment.date) {
-            pre.push(` on ${payment.date}`);
-          }
-
-          output.push(
-            `${suspended}${String(payment.value)}${pre.join("")} ${
-              payment.description
-            }${tags}`
-          );
+          output.push(this.convertPaymentLineToText(payment));
         });
       });
 
-      return output.join("\n").trim();
+      return (
+        this.convertProjectsToText() +
+        "\n\n" +
+        output.join("\n").trim()
+      ).trim();
+    },
+
+    convertPaymentLineToText(payment) {
+      let tags = "";
+      let pre = [];
+      let suspended = payment.suspended ? "--" : "";
+
+      if (payment.tags.length !== 0) {
+        tags = ` #${payment.tags.join(" #")}`;
+      }
+
+      if (payment.date) {
+        pre.push(` on ${payment.date}`);
+      }
+
+      return `${suspended}${String(payment.value)}${pre.join("")} ${
+        payment.description
+      }${tags}`;
+    },
+
+    convertProjectsToText() {
+      return this.projects
+        .map((project) => {
+          return `project ${project.id} ${this.convertPaymentLineToText(
+            project.payment
+          )}\n  from ${project.from} to ${project.to}`;
+        })
+        .join("\n\n");
     },
 
     openAddMonthModal() {
@@ -418,11 +499,71 @@ export default {
     },
 
     setPaymentsByText(text) {
+      this.projects = this.getProjectsFromText(text);
+
       this.$store.dispatch("payments/setAllPayments", this.textToJson(text));
     },
 
-    removeTheNonePayment(payments) {
-      return payments.filter((payment) => payment.description !== "NONE");
+    getAllPayments(payments) {
+      const otherPayments = [];
+
+      const paymentReference = payments[0];
+
+      this.projects.forEach((project) => {
+        this.getProjectPeriod(project).forEach((month, index, all) => {
+          if (
+            month.month === Number(paymentReference.month) &&
+            month.year === Number(paymentReference.year)
+          ) {
+            otherPayments.push({
+              ...project.payment,
+              value: -project.payment.value / all.length,
+            });
+          }
+        });
+      });
+
+      return payments
+        .filter((payment) => payment.description !== "NONE")
+        .concat(otherPayments);
+    },
+
+    getProjectsFromText(text) {
+      const projectRule = /^project ([a-z0-9-]+) /;
+      const periodRule = /^ {2}from (\d{2}\/\d{4}) to (\d{2}\/\d{4})$/;
+
+      let projects = [];
+      let isProject = false;
+
+      text.split("\n").forEach((line) => {
+        if (projectRule.test(line)) {
+          isProject = true;
+
+          const [content, projectId] = line.match(projectRule);
+
+          projects.push({
+            id: projectId,
+            payment: this.getPaymentFromLine(line.slice(content.length)),
+            from: null,
+            to: null,
+          });
+        }
+
+        if (isProject && periodRule.test(line)) {
+          const [from, to] = line.match(periodRule).slice(1);
+
+          const lastIndex = projects.length - 1;
+
+          projects[lastIndex].from = from;
+          projects[lastIndex].to = to;
+        }
+
+        if (line === "" && isProject) {
+          isProject = false;
+        }
+      });
+
+      return projects;
     },
   },
 
